@@ -6,11 +6,40 @@ services:
   kafkaconnect:
     image: lsstsqre/kafkaconnect:0.9.1
     container_name: kafkaconnect
+    depends_on:
+      - connect
+      - influxdb
     entrypoint: kafkaconnect
     environment:
       KAFKA_CONNECT_URL: http://connect:8083
       KAFKA_BROKER_URL: broker:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
+      KAFKA_CONNECT_TOPIC: foo
+
+  init-kafkaconnect:
+    image: lsstsqre/kafkaconnect:0.9.1
+    container_name: init-kafkaconnect
+    depends_on:
+      - kafkaconnect
+      - connect
+    #entrypoint: kafkaconnect
+    #restart: unless-stopped
+    environment:
+      KAFKA_CONNECT_URL: http://connect:8083
+      KAFKA_BROKER_URL: broker:29092
+      KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
+      KAFKA_CONNECT_TOPIC: foo
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e 'Waiting for connect to be launched...'
+
+      sleep 50
+      echo -e 'Creating InfluxDB Sink Instance...'
+
+      # create Instance of InfluxDB Sink
+      kafkaconnect create influxdb-sink -d smartwatch_db foo
+      "
 
   # influxconnect:
   #   image: streamreactor/kafka-connect-elastic:1.2.1
@@ -66,7 +95,7 @@ services:
       kafka-topics --bootstrap-server broker:29092 --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic wikimedia --replication-factor 1 --partitions 1 
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic foo --replication-factor 1 --partitions 1 
     
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server broker:29092 --list
@@ -145,6 +174,8 @@ services:
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
       CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      #CONNECT_INTERNAL_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      #CONNECT_INTERNAL_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
 
@@ -157,6 +188,7 @@ services:
       - "8086:8086"
     environment:
       - INFLUXDB_DB=smartwatch_db
+      - INFLUXDB_ADMIN_ENABLED=true
       - INFLUXDB_ADMIN_USER=admin
       - INFLUXDB_ADMIN_PASSWORD=admin
       - INFLUXDB_USER=admin
@@ -168,6 +200,7 @@ services:
     restart: unless-stopped
     depends_on:
       - broker
+      - init-kafka-topics
     ports:
       - 2000:2000
     # networks: 
@@ -192,14 +225,18 @@ services:
       - broker
       - schema-registry
   
-  init-influxdb:
-    build:
-      context: ./influxdb
-    #restart: unless-stopped
-    depends_on:
-      - broker
-      - influxdb
+  # init-influxdb:
+  #   build:
+  #     context: ./influxdb
+  #   #restart: unless-stopped
+  #   depends_on:
+  #     - broker
+  #     - influxdb
 
+# networks:
+#   default:
+#     external:
+#       name: smartwatch_network
 
 volumes:
   influxdb_data:

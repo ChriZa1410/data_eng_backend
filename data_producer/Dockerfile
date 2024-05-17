@@ -10,4 +10,4 @@ RUN apt-get install curl -y --no-install-recommends
 COPY . /data_producer/
 RUN pip install -r /data_producer/requirements.txt
 
-CMD ["python3", "./producer.py"]
+CMD ["python3", "./my_producer.py"]

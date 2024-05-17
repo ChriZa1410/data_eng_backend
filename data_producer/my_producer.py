@@ -1,6 +1,6 @@
 import requests
 import json
-
+from time import sleep
 # 3rd party library imported
 from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
@@ -11,10 +11,10 @@ from confluent_kafka.schema_registry import Schema
 from constants import SCHEMA_STR
 
 init_string = 'data: '
-source_url = 'https://stream.wikimedia.org/v2/stream/recentchange'
+#source_url = 'https://stream.wikimedia.org/v2/stream/recentchange'
 kafka_url = 'broker:29092'
 schema_registry_url = 'http://schema-registry:8081'
-kafka_topic = 'wikimedia'
+kafka_topic = 'foo'
 schema_registry_subject = f"{kafka_topic}-value"
 
 def delivery_report(errmsg, msg):
@@ -23,9 +23,11 @@ def delivery_report(errmsg, msg):
         return
     print('Message: {} successfully produced to Topic: {} Partition: [{}] at offset {}'.format(msg.key(), msg.topic(), msg.partition(), msg.offset()))
 
-def avro_producer(source_url, kafka_url, schema_registry_url, schema_registry_subject):
+#def avro_producer(source_url, kafka_url, schema_registry_url, schema_registry_subject):
+def avro_producer(kafka_url, schema_registry_url, schema_registry_subject):
     # schema registry
     sr, latest_version = get_schema_from_schema_registry(schema_registry_url, schema_registry_subject)
+    counter = 0
 
 
     value_avro_serializer = AvroSerializer(schema_registry_client = sr,
@@ -46,28 +48,49 @@ def avro_producer(source_url, kafka_url, schema_registry_url, schema_registry_su
 
     s = requests.Session()
 
-    with s.get(source_url, headers=None, stream=True) as resp:
-        for line in resp.iter_lines():
-            if line:
-                decoded_line = line.decode()
-                if decoded_line.find(init_string) >= 0:
-                    # remove data: to create a valid json
-                    decoded_line = decoded_line.replace(init_string, "")
-                    # convert to json
-                    decoded_json = json.loads(decoded_line)
+    while True:
+        sleep(2)
+        try:
+            counter+=1
+            content='{"bar":"John Doe", "baz": 1}'
+            print(content)
+            decoded_json=json.loads(content)
+            producer.produce(topic=kafka_topic, value=decoded_json, on_delivery=delivery_report)
+
+            # Trigger any available delivery report callbacks from previous produce() calls
+            events_processed = producer.poll(1)
+            print(f"events_processed: {events_processed}")
+
+            messages_in_queue = producer.flush(1)
+            print(f"messages_in_queue: {messages_in_queue}")
+        except Exception as e:
+            print(e)
+
+        
+
+
+    # with s.get(source_url, headers=None, stream=True) as resp:
+    #     for line in resp.iter_lines():
+    #         if line:
+    #             decoded_line = line.decode()
+    #             if decoded_line.find(init_string) >= 0:
+    #                 # remove data: to create a valid json
+    #                 decoded_line = decoded_line.replace(init_string, "")
+    #                 # convert to json
+    #                 decoded_json = json.loads(decoded_line)
                     
-                    try:
-                        # print(decoded_line + '\n')
-                        producer.produce(topic=kafka_topic, value=decoded_json, on_delivery=delivery_report)
+    #                 try:
+    #                     # print(decoded_line + '\n')
+    #                     producer.produce(topic=kafka_topic, value=decoded_json, on_delivery=delivery_report)
 
-                        # Trigger any available delivery report callbacks from previous produce() calls
-                        events_processed = producer.poll(1)
-                        print(f"events_processed: {events_processed}")
+    #                     # Trigger any available delivery report callbacks from previous produce() calls
+    #                     events_processed = producer.poll(1)
+    #                     print(f"events_processed: {events_processed}")
 
-                        messages_in_queue = producer.flush(1)
-                        print(f"messages_in_queue: {messages_in_queue}")
-                    except Exception as e:
-                        print(e)
+    #                     messages_in_queue = producer.flush(1)
+    #                     print(f"messages_in_queue: {messages_in_queue}")
+    #                 except Exception as e:
+    #                     print(e)
                         
 def get_schema_from_schema_registry(schema_registry_url, schema_registry_subject):
     sr = SchemaRegistryClient({'url': schema_registry_url})
@@ -90,4 +113,5 @@ def update_schema(schema_registry_url, schema_registry_subject, schema_str):
     schema_id = register_schema(schema_registry_url, schema_registry_subject, schema_str)
     return schema_id
                         
-avro_producer(source_url, kafka_url, schema_registry_url, schema_registry_subject)
+#avro_producer(source_url, kafka_url, schema_registry_url, schema_registry_subject)
+avro_producer(kafka_url, schema_registry_url, schema_registry_subject)

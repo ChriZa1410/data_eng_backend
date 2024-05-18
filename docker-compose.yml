@@ -1,11 +1,10 @@
-
 ---
 version: '3'
 services:
 
-  kafkaconnect:
+  kafkaconnect_influxdb_sink:
     image: lsstsqre/kafkaconnect:0.9.1
-    container_name: kafkaconnect
+    container_name: kafkaconnect_influxdb_sink
     depends_on:
       - connect
       - influxdb
@@ -14,44 +13,59 @@ services:
       KAFKA_CONNECT_URL: http://connect:8083
       KAFKA_BROKER_URL: broker:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
-      KAFKA_CONNECT_TOPIC: foo
+      KAFKA_CONNECT_TOPIC: db_upload
 
-  init-kafkaconnect:
+  init-kafkaconnect_influxdb_sink:
     image: lsstsqre/kafkaconnect:0.9.1
-    container_name: init-kafkaconnect
+    container_name: init-kafkaconnect_influxdb_sink
     depends_on:
-      - kafkaconnect
+      - kafkaconnect_influxdb_sink
       - connect
-    #entrypoint: kafkaconnect
-    #restart: unless-stopped
     environment:
       KAFKA_CONNECT_URL: http://connect:8083
       KAFKA_BROKER_URL: broker:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
-      KAFKA_CONNECT_TOPIC: foo
+      KAFKA_CONNECT_TOPIC: db_upload
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
       echo -e 'Waiting for connect to be launched...'
 
-      sleep 50
+      sleep 60
       echo -e 'Creating InfluxDB Sink Instance...'
 
       # create Instance of InfluxDB Sink
-      kafkaconnect create influxdb-sink -d smartwatch_db foo
+      kafkaconnect create influxdb-sink -d smartwatch_db db_upload
       "
 
-  # influxconnect:
-  #   image: streamreactor/kafka-connect-elastic:1.2.1
-  #   container_name: influxdb_connector
-    # environment:
-    #   - CONNECTOR_CLASS: io.lenses.streamreactor.connect.influx.InfluxSinkConnector
-    #   - TASKS_MAX: 1
-    #   - TOPICS: influx
-    #   - CONNECT_INFLUX_URL: "http://influxdb:8086"
-    #   - CONNECT_INFLUX_DB: mydb
-    #   - CONNECT_INFLUX_USERNAME: admin
-    #   - CONNECT_INFLUX_KCQL: INSERT INTO influxMeasure SELECT * FROM influx WITHTIMESTAMP sys_time()
+  kafkaconnect_smartwatch_source:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafkaconnect_smartwatch_source
+    depends_on:
+      - broker
+      - connect     
+    restart: unless-stopped 
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e 'Waiting for connect to be launched...'
+      cub kafka-ready -b broker:29092 1 20 && sleep 15 && \
+      curl -X POST -H 'Content-Type: application/json' --data '{
+        \"name\": \"csv-file-source\",
+        \"config\": {
+          \"connector.class\": \"FileStreamSource\", 
+          \"tasks.max\": \"1\", 
+          \"file\": \"/simulation_data/smartwatch_heartrate_source.csv\", 
+          \"topic\": \"smartwatch_source\", 
+          \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
+          \"value.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
+          \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"
+        }
+      }' http://connect:8083/connectors && \
+      sleep infinity
+      "
+    volumes:
+      - ./simulation_data:/simulation_data
 
   zookeeper:
     image: confluentinc/cp-zookeeper:5.5.3
@@ -95,7 +109,8 @@ services:
       kafka-topics --bootstrap-server broker:29092 --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic foo --replication-factor 1 --partitions 1 
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic db_upload --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic smartwatch_source --replication-factor 1 --partitions 1
     
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server broker:29092 --list
@@ -109,6 +124,7 @@ services:
       - zookeeper
       - broker
       - schema-registry
+      - connect
     deploy:
       restart_policy:
         condition: on-failure
@@ -129,7 +145,6 @@ services:
       PORT: 9021
  
 
-
   schema-registry:
     image: confluentinc/cp-schema-registry:latest
     hostname: schema-registry
@@ -140,12 +155,9 @@ services:
       - "8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      #SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
-      #SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-      #SCHEMA_REGISTRY_KAFKASTORE_ZK_SESSION_TIMEOUT_MS: 300000
-      #SCHEMA_REGISTRY_KAFKASTORE_INIT_TIMEOUT_MS: 300000
+
 
   connect:
     image: lsstsqre/cp-kafka-connect:5.5.2-0.9.1
@@ -169,15 +181,17 @@ services:
       CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
       CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
       CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      #CONNECT_INTERNAL_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      #CONNECT_INTERNAL_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+    volumes:
+      - ./simulation_data:/simulation_data
+
 
   influxdb:
     image: influxdb:1.8.5
@@ -194,17 +208,15 @@ services:
       - INFLUXDB_USER=admin
       - INFLUXDB_USER_PASSWORD=admin
 
-  data_producer:
+  data_upload:
     build:
-      context: ./data_producer
+      context: ./data_upload
     restart: unless-stopped
     depends_on:
       - broker
       - init-kafka-topics
     ports:
       - 2000:2000
-    # networks: 
-    #   - kafka_network
 
   # data_consumer:
   #   build:
@@ -220,23 +232,21 @@ services:
   init-schema-registry:
     build:
       context: ./schema-registry
-    #restart: unless-stopped
     depends_on:
       - broker
       - schema-registry
   
-  # init-influxdb:
+  
+  # data_simulation:
   #   build:
-  #     context: ./influxdb
-  #   #restart: unless-stopped
+  #     context: ./data_simulation
+  #   restart: unless-stopped
   #   depends_on:
   #     - broker
-  #     - influxdb
-
-# networks:
-#   default:
-#     external:
-#       name: smartwatch_network
+  #     - zookeeper
+  #     - connect
+  #   ports:
+  #     - 3000:3000
 
 volumes:
   influxdb_data:

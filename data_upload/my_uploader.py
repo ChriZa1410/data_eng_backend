@@ -10,11 +10,11 @@ from confluent_kafka.schema_registry import Schema
 # imort from constants
 from constants import SCHEMA_STR
 
-init_string = 'data: '
+#init_string = 'data: '
 #source_url = 'https://stream.wikimedia.org/v2/stream/recentchange'
 kafka_url = 'broker:29092'
 schema_registry_url = 'http://schema-registry:8081'
-kafka_topic = 'db_upload'
+kafka_topic = 'topic_upload_data'
 schema_registry_subject = f"{kafka_topic}-value"
 
 def delivery_report(errmsg, msg):

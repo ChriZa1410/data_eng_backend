@@ -14,9 +14,9 @@ sleep 45
 echo 'Setting schemas...'
 curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
       --data "$SCHEMA_UPLOAD" \
-      http://schema-registry:8081/subjects/db_upload-value/versions
+      http://schema-registry:8081/subjects/topic_upload_data-value/versions
 
 # curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
 #       --data "$SCHEMA_CSV_SOURCE" \
-#       http://schema-registry:8081/subjects/smartwatch_source-value/versions
+#       http://schema-registry:8081/subjects/topic_raw_data-value/versions
 

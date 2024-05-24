@@ -1,8 +1,0 @@
-name=influxdb
-connector.class=io.lenses.streamreactor.connect.influx.InfluxSinkConnector
-tasks.max=1
-topics=influx
-connect.influx.url=http://influxdb:8086
-connect.influx.db=mydb
-connect.influx.username=admin
-connect.influx.kcql=INSERT INTO influxMeasure SELECT * FROM influx WITHTIMESTAMP sys_time()

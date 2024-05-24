@@ -1,0 +1,7 @@
+# confluent-kafka==2.3.0
+# fastavro==1.9.4
+# requests==2.31.0
+
+confluent-kafka==1.9.2
+fastavro==1.4.7
+requests==2.27.1

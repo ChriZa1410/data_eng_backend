@@ -3,7 +3,7 @@ version: '3'
 services:
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:5.5.3
+    image: confluentinc/cp-zookeeper:latest
     hostname: zookeeper
     container_name: zookeeper
     ports:
@@ -13,7 +13,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
 
   broker:
-    image: confluentinc/cp-enterprise-kafka:5.5.3
+    image: confluentinc/cp-enterprise-kafka:latest
     hostname: broker
     container_name: broker
     depends_on:
@@ -47,7 +47,7 @@ services:
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
 
   ingestion_connector:
-    image: lsstsqre/cp-kafka-connect:5.5.2-0.9.1
+    image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
     hostname: ingestion_connector
     container_name: ingestion_connector
     depends_on:
@@ -80,7 +80,7 @@ services:
       - ./simulation_data:/simulation_data
 
   db_connector:
-    image: lsstsqre/cp-kafka-connect:5.5.2-0.9.1
+    image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
     hostname: db_connector
     container_name: db_connector
     depends_on:
@@ -110,8 +110,39 @@ services:
       CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
 
+  metrics_connector:
+    image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
+    hostname: metrics_connector
+    container_name: metrics_connector
+    depends_on:
+      - broker
+      - schema-registry
+    ports:
+      - "8085:8085"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: metrics_connector
+      CONNECT_REST_PORT: 8085
+      CONNECT_GROUP_ID: metrics_connector
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-sink-metrics
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-sink-metrics
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink-metrics
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+
   control-center:
-    image: confluentinc/cp-enterprise-control-center:5.4.0
+    image: confluentinc/cp-enterprise-control-center:latest
     hostname: control-center
     container_name: control-center
     depends_on:
@@ -148,7 +179,7 @@ services:
       - schema-registry
 
   init-kafka-topics:
-    image: confluentinc/cp-kafka:6.1.1
+    image: confluentinc/cp-kafka:latest
     depends_on:
       - broker
       - schema-registry
@@ -161,10 +192,18 @@ services:
       echo -e 'Creating kafka topics'
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_raw_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
-    
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
+
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server broker:29092 --list
       "
+
+  init-databases:
+    build:
+      context: ./databases
+    depends_on:
+      - broker
+      - influxdb
 
   IoT_sensor_data_simulation_smartwatch:
     image: confluentinc/cp-kafka:latest
@@ -203,16 +242,15 @@ services:
     ports:
       - "8086:8086"
     environment:
-      - INFLUXDB_DB=data_storage
       - INFLUXDB_ADMIN_ENABLED=true
       - INFLUXDB_ADMIN_USER=admin
       - INFLUXDB_ADMIN_PASSWORD=admin
       - INFLUXDB_USER=admin
       - INFLUXDB_USER_PASSWORD=admin
 
-  kafkaconnect_influxdb_sink:
-    image: lsstsqre/kafkaconnect:0.9.1
-    container_name: kafkaconnect_influxdb_sink
+  kafkaconnect_influxdb_sink_productive:
+    image: lsstsqre/kafkaconnect:1.3.1
+    container_name: kafkaconnect_influxdb_sink_productive
     depends_on:
       - db_connector
       - influxdb
@@ -223,11 +261,24 @@ services:
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
       KAFKA_CONNECT_TOPIC: topic_upload_data
 
-  init-kafkaconnect_influxdb_sink:
-    image: lsstsqre/kafkaconnect:0.9.1
-    container_name: init-kafkaconnect_influxdb_sink
+  kafkaconnect_influxdb_sink_metrics:
+    image: lsstsqre/kafkaconnect:1.3.1
+    container_name: kafkaconnect_influxdb_sink_metrics
     depends_on:
-      - kafkaconnect_influxdb_sink
+      - metrics_connector
+      - influxdb
+    entrypoint: kafkaconnect
+    environment:
+      KAFKA_CONNECT_URL: http://metrics_connector:8085
+      KAFKA_BROKER_URL: broker:29092
+      KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
+      KAFKA_CONNECT_TOPIC: topic_kafka_metrics
+
+  init-kafkaconnect_influxdb_sink_productive:
+    image: lsstsqre/kafkaconnect:1.3.1
+    container_name: init-kafkaconnect_influxdb_sink_productive
+    depends_on:
+      - kafkaconnect_influxdb_sink_productive
       - db_connector
     environment:
       KAFKA_CONNECT_URL: http://db_connector:8084
@@ -238,14 +289,74 @@ services:
     command: |
       "
       echo -e 'Waiting for db_connector to be launched...'
-
       sleep 60
-      echo -e 'Creating InfluxDB Sink Instance: Data storage...'
 
-      # create Instance of InfluxDB Sink
+      echo -e 'Creating InfluxDB Sink Instance: Data storage...'
+      # create Instance of InfluxDB Sink for productive smartwatch data
       kafkaconnect create influxdb-sink -d data_storage topic_upload_data
       "
-  
+
+  init-kafkaconnect_influxdb_sink_metrics:
+    image: lsstsqre/kafkaconnect:1.3.1
+    container_name: init-kafkaconnect_influxdb_sink_metrics
+    depends_on:
+      - kafkaconnect_influxdb_sink_metrics
+      - metrics_connector
+    environment:
+      KAFKA_CONNECT_URL: http://metrics_connector:8085
+      KAFKA_BROKER_URL: broker:29092
+      KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
+      KAFKA_CONNECT_TOPIC: topic_kafka_metrics
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e 'Waiting for metrics_connector to be launched...'
+      sleep 60
+
+      echo -e 'Creating InfluxDB Sink Instance: Kafka metrics...'
+      # create Instance of InfluxDB Sink for Kafka metrics data
+      kafkaconnect create influxdb-sink -d kafka_metrics topic_kafka_metrics
+      "
+
+#############experimental###################################  
+
+  # kafkaconnect_influxdb_grafana:
+  #   image: lsstsqre/kafkaconnect:0.9.1
+  #   container_name: kafkaconnect_influxdb_grafana
+  #   depends_on:
+  #     - db_connector
+  #     - influxdb
+  #   entrypoint: kafkaconnect
+  #   environment:
+  #     KAFKA_CONNECT_URL: http://db_connector:8084
+  #     KAFKA_BROKER_URL: broker:29092
+  #     KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
+  #     KAFKA_CONNECT_TOPIC: kafka_metrics
+
+  # init-kafkaconnect_influxdb_grafana:
+  #   image: lsstsqre/kafkaconnect:0.9.1
+  #   container_name: init-kafkaconnect_influxdb_grafana
+  #   depends_on:
+  #     - kafkaconnect_influxdb_grafana
+  #     - db_connector
+  #   environment:
+  #     KAFKA_CONNECT_URL: http://db_connector:8084
+  #     KAFKA_BROKER_URL: broker:29092
+  #     KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
+  #     KAFKA_CONNECT_TOPIC: kafka_metrics
+  #   entrypoint: [ '/bin/sh', '-c' ]
+  #   command: |
+  #     "
+  #     echo -e 'Waiting for db_connector to be launched...'
+
+  #     sleep 60
+  #     echo -e 'Creating InfluxDB Sink Instance for Grafana dashboard: Kafka Metrics...'
+
+  #     # create Instance of InfluxDB Sink for Grafana dashboard
+  #     kafkaconnect create influxdb-sink -d kafka_metrics_db kafka_metrics
+      # "
+################################################
+
   data_upload:
     build:
       context: ./data_upload
@@ -268,6 +379,22 @@ services:
     # networks: 
     #   - kafka_network
 
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - influxdb
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    # volumes:
+    #   - ./configuration/grafana/provisioning:/etc/grafana/provisioning
+    #   - ./configuration/grafana/dashboards:/var/lib/grafana/dashboards
 
 volumes:
   influxdb_data:
+  grafana_data:

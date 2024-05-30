@@ -1,5 +1,5 @@
 ---
-version: '3'
+#version: '3'
 services:
 
   zookeeper:
@@ -60,22 +60,22 @@ services:
       CONNECT_REST_ADVERTISED_HOST_NAME: ingestion_connector
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: ingestion_connector
+      #CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
       CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-source
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
       CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-source
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_STATUS_STORAGE_TOPIC: connect-status-source
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
-      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
-      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+      #CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081 
+      #CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      #CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      #CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      #CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
+      #CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
     volumes:
       - ./simulation_data:/simulation_data
 
@@ -167,8 +167,8 @@ services:
       CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-      CONTROL_CENTER_CONNECT_CLUSTER: '["ingestion_connector", "db_connector"]'
-      CONTROL_CENTER_CONNECT_CLUSTER_URL: '["http://ingestion_connector:8083", "http://db_connector:8084"]'
+      # CONTROL_CENTER_CONNECT_CLUSTER: '["ingestion_connector", "db_connector"]'
+      # CONTROL_CENTER_CONNECT_CLUSTER_URL: '["http://ingestion_connector:8083", "http://db_connector:8084"]'
       PORT: 9021
 
   init-schema-registry:
@@ -192,6 +192,7 @@ services:
       echo -e 'Creating kafka topics'
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_raw_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_aggregated_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
@@ -222,17 +223,24 @@ services:
         \"config\": {
           \"connector.class\": \"FileStreamSource\", 
           \"tasks.max\": \"1\", 
-          \"file\": \"/simulation_data/smartwatch_heartrate_source.csv\", 
-          \"topic\": \"topic_raw_data\", 
+          \"file\": \"/simulation_data/smartwatch_heartrate_source_testdata2.csv\", 
+          \"topic\": \"topic_raw_data\",
           \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
-          \"value.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
-          \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"
+          \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
+          \"value.converter.schemas.enable\": \"false\"
         }
       }' http://ingestion_connector:8083/connectors && \
       sleep infinity
       "
     volumes:
       - ./simulation_data:/simulation_data
+    # networks: 
+    #   - default
+
+#\"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
+#\"value.converter.schema.registry.url\": \"http://schema-registry:8081\"
+#\"value.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
+
 
   influxdb:
     image: influxdb:1.8.5
@@ -318,44 +326,15 @@ services:
       kafkaconnect create influxdb-sink -d kafka_metrics topic_kafka_metrics
       "
 
-#############experimental###################################  
-
-  # kafkaconnect_influxdb_grafana:
-  #   image: lsstsqre/kafkaconnect:0.9.1
-  #   container_name: kafkaconnect_influxdb_grafana
-  #   depends_on:
-  #     - db_connector
-  #     - influxdb
-  #   entrypoint: kafkaconnect
-  #   environment:
-  #     KAFKA_CONNECT_URL: http://db_connector:8084
-  #     KAFKA_BROKER_URL: broker:29092
-  #     KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
-  #     KAFKA_CONNECT_TOPIC: kafka_metrics
-
-  # init-kafkaconnect_influxdb_grafana:
-  #   image: lsstsqre/kafkaconnect:0.9.1
-  #   container_name: init-kafkaconnect_influxdb_grafana
-  #   depends_on:
-  #     - kafkaconnect_influxdb_grafana
-  #     - db_connector
-  #   environment:
-  #     KAFKA_CONNECT_URL: http://db_connector:8084
-  #     KAFKA_BROKER_URL: broker:29092
-  #     KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
-  #     KAFKA_CONNECT_TOPIC: kafka_metrics
-  #   entrypoint: [ '/bin/sh', '-c' ]
-  #   command: |
-  #     "
-  #     echo -e 'Waiting for db_connector to be launched...'
-
-  #     sleep 60
-  #     echo -e 'Creating InfluxDB Sink Instance for Grafana dashboard: Kafka Metrics...'
-
-  #     # create Instance of InfluxDB Sink for Grafana dashboard
-  #     kafkaconnect create influxdb-sink -d kafka_metrics_db kafka_metrics
-      # "
-################################################
+  data_aggregation:
+    build: ./data_aggregation
+    depends_on:
+      - broker
+    #restart: unless-stopped
+    environment:
+      - KAFKA_BROKER=broker:29092
+    networks:
+      - default
 
   data_upload:
     build:
@@ -366,18 +345,6 @@ services:
       - init-kafka-topics
     ports:
       - 2000:2000
-  
-
-  # data_consumer:
-  #   build:
-  #     context: ./data_consumer
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - broker
-  #   ports:
-  #     - 3000:3000
-    # networks: 
-    #   - kafka_network
 
   grafana:
     image: grafana/grafana:latest
@@ -391,10 +358,12 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
-    # volumes:
-    #   - ./configuration/grafana/provisioning:/etc/grafana/provisioning
-    #   - ./configuration/grafana/dashboards:/var/lib/grafana/dashboards
 
 volumes:
   influxdb_data:
   grafana_data:
+
+networks:
+  default:
+    external:
+      name: kafka-network

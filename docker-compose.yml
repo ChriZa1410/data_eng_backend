@@ -337,7 +337,7 @@ services:
     build: ./data_aggregation
     depends_on:
       - broker
-    #restart: unless-stopped
+    restart: unless-stopped
     environment:
       - KAFKA_BROKER=broker:29092
     networks:
@@ -347,7 +347,7 @@ services:
     build: ./data_processing
     depends_on:
       - broker
-    #restart: unless-stopped
+    restart: unless-stopped
     environment:
       - KAFKA_BROKER=broker:29092
     networks:

@@ -1,61 +1,35 @@
 import faust
-import csv
-import io
 import json
+import random
+import datetime as dt
 
 app = faust.App('data_aggregation', broker='kafka://broker:29092', store='memory://')
 
-input_topic = app.topic('topic_raw_data', key_type=None, value_type=str)
+input_topic = app.topic('topic_raw_data', key_type=None)
 output_topic = app.topic('topic_aggregated_data', key_type=None, value_type=str)
 
-# class InputEvent(faust.Record):
-#     value: str
-
-# class OutputEvent(faust.Record):
-#     value: str
+def round_seconds(date):
+    obj=dt.datetime.strptime(date, '%Y-%m-%d %H:%M:%S.%f')
+    if obj.microsecond >= 500_000:
+        obj += dt.timedelta(seconds=1)
+    return obj.replace(microsecond=0)
 
 @app.agent(input_topic)
 async def InputEvent(input_messages):
-    print("starting now...")
     async for key, message in input_messages.items():
-        print(f'Got value {message}')
-        print(f'Got key {key}')
-        output_message = message.upper()
-        print(f'Writing {output_message}')
-        await output_topic.send(key=key, value=output_message)
-        # csv_reader = csv.DictReader(io.StringIO(event))
-        # for row in csv_reader:
-        #     print('raw_data: ' + row)
-        #     json_data = json.dumps(row)
-        #     print('json_data: ' + json_data)
-        #     await output_topic.send(value=json_data)
+        
+        split = message.split(",")
+        split[2] = str(round_seconds(split[2]))
+        dictionary = {
+            "sensor_id" : split[0],
+            "data_type" : split[1],
+            "timestamp" : split[2],
+            "sensor_value": split[3]
+        }
+        output_message = json.dumps(dictionary)
+        key=random.randint(1,100)
+        print(f'Writing aggregated data: {key} - {output_message}')
+        await output_topic.send(key=str(key), value=output_message)
 
 if __name__ == '__main__':
     app.main()
-
-# import faust
-# import csv
-# import io
-# import json
-
-# # Faust app definieren
-# app = faust.App('faust_app', broker='kafka://broker:29092', store='memory://')
-
-# # Topics definieren
-# input_topic = app.topic('topic_raw_data', value_type=str)
-# output_topic = app.topic('topic_aggregated_data', value_type=str)
-
-# # Agent definieren, der Nachrichten verarbeitet
-# @app.agent(input_topic)
-# async def process(stream):
-#     async for event in stream:
-#         csv_reader = csv.DictReader(io.StringIO(event))
-#         for row in csv_reader:
-#             print(row)
-#             json_data = json.dumps(row)
-#             print(json_data)
-#             await output_topic.send(value=json_data)
-
-# # Main-Methode
-# if __name__ == '__main__':
-#     app.main()

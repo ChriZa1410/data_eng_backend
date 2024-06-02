@@ -193,6 +193,7 @@ services:
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_raw_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_aggregated_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_processed_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
@@ -223,7 +224,7 @@ services:
         \"config\": {
           \"connector.class\": \"FileStreamSource\", 
           \"tasks.max\": \"1\", 
-          \"file\": \"/simulation_data/smartwatch_heartrate_source_testdata2.csv\", 
+          \"file\": \"/simulation_data/smartwatch_heartrate_source_data.csv\", 
           \"topic\": \"topic_raw_data\",
           \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
           \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
@@ -236,10 +237,6 @@ services:
       - ./simulation_data:/simulation_data
     # networks: 
     #   - default
-
-#\"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
-#\"value.converter.schema.registry.url\": \"http://schema-registry:8081\"
-#\"value.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
 
 
   influxdb:
@@ -326,8 +323,28 @@ services:
       kafkaconnect create influxdb-sink -d kafka_metrics topic_kafka_metrics
       "
 
+  data_simulator:
+    build:
+      context: ./simulation_data
+    depends_on:
+      - broker
+    ports:
+      - 4000:4000
+    volumes:
+      - ./simulation_data:/simulation_data
+    
   data_aggregation:
     build: ./data_aggregation
+    depends_on:
+      - broker
+    #restart: unless-stopped
+    environment:
+      - KAFKA_BROKER=broker:29092
+    networks:
+      - default
+
+  data_processing:
+    build: ./data_processing
     depends_on:
       - broker
     #restart: unless-stopped

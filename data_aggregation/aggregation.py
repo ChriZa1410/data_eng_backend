@@ -26,10 +26,10 @@ async def InputEvent(input_messages):
         split = message.split(",")
 
         output_message = AggregatedData(
-            sensor_id = split[0],
+            sensor_id = int(split[0]),
             data_type = split[1],
             timestamp = str(round_seconds(split[2])),
-            sensor_value= split[3]
+            sensor_value= int(split[3])
         )
 
         key=random.randint(1,100)

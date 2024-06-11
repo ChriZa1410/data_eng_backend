@@ -70,7 +70,7 @@ async def process(input_messages):
             else: output_lowest = memory_lowest
 
             #update mean sensor value
-            output_mean = (memory_mean + int(message.sensor_value)) / (memory_mean_count + 1)
+            output_mean = (memory_mean * memory_mean_count + int(message.sensor_value)) / (memory_mean_count+1)
             output_mean_count = memory_mean_count+1
 
             sensor_data = ProcessedData(

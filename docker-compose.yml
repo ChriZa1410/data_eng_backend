@@ -109,6 +109,83 @@ services:
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    # #image: confluentinc/cp-kafka-connect:latest
+    # image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
+    # hostname: db_connector
+    # container_name: db_connector
+    # depends_on:
+    #   - broker
+    #   - schema-registry
+    # environment:
+    #   CONNECT_BOOTSTRAP_SERVERS: broker:29092
+    #   CONNECT_REST_PORT: 8084
+    #   CONNECT_GROUP_ID: "db_connector"
+    #   CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-sink
+    #   CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+    #   CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+    #   CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-sink
+    #   CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+    #   CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink
+    #   CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+    #   CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+    #   #CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+    #   CONNECT_VALUE_CONVERTER: "io.confluent.connect.avro.AvroConverter"
+    #   CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+    #   CONNECT_REST_ADVERTISED_HOST_NAME: "db_connector"
+    #   CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
+    #   # CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+    #   # CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    # ports:
+    #   - "8084:8084"
+    # volumes:
+    #   - ./connect-plugins:/usr/share/java/kafka-connect-plugins
+
+
+    # image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
+    # hostname: db_connector
+    # container_name: db_connector
+    # depends_on:
+    #   - broker
+    #   - schema-registry
+    # ports:
+    #   - "8084:8084"
+    # environment:
+    #   CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+    #   CONNECT_REST_ADVERTISED_HOST_NAME: db_connector
+    #   CONNECT_REST_PORT: 8084
+    #   CONNECT_GROUP_ID: db_connector
+    #   CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-sink
+    #   CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+    #   CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+    #   CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-sink
+    #   CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+    #   CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink
+    #   CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+    #   #CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+    #   #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+    #   CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    #   CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+    #   CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+    #   #CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+    #   CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    #   CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+    #   CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+    #   CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
+    #   CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+    #   SCHEMAS_ENABLE: "false"
 
   metrics_connector:
     image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
@@ -265,6 +342,16 @@ services:
       KAFKA_BROKER_URL: broker:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
       KAFKA_CONNECT_TOPIC: topic_upload_data
+      # CONNECTOR_CLASS: "com.datamountaineer.streamreactor.connect.influx.InfluxSinkConnector"
+      # TASKS_MAX: "1"
+      # TOPICS: "topic_upload_data"
+      # KAFKA_CONNECTION_USER: "admin"
+      # KAFKA_CONNECTION_PASSWORD: "admin"
+      # KAFKA_CONNECT_DATABASE: "data_storage"
+      # KAFKA_CONNECT_INFLUX_KCQ: "INSERT INTO topic_upload_data SELECT * FROM topic_upload_data"
+      # KAFKA_CONNECT_PROGRESS_ENABLED: "true"
+      # KAFKA_CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      # KAFKA_CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
 
   kafkaconnect_influxdb_sink_metrics:
     image: lsstsqre/kafkaconnect:1.3.1
@@ -362,6 +449,9 @@ services:
       - init-kafka-topics
     ports:
       - 2000:2000
+    environment:
+      - KAFKA_BROKER=broker:29092
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
 
   grafana:
     image: grafana/grafana:latest

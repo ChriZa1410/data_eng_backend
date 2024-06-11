@@ -1,13 +1,11 @@
-FROM python:3.10.12-slim
+FROM python:3.9-slim
 
-WORKDIR /data_upload
+WORKDIR /bin/data_upload
 
-RUN apt-get update
-RUN apt install python3-pip -y
-RUN pip install --upgrade pip 
-RUN apt-get install curl -y --no-install-recommends
+COPY requirements.txt requirements.txt
+#RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
-COPY . /data_upload/
-RUN pip install -r /data_upload/requirements.txt
+COPY uploading.py ./
 
-CMD ["python3", "./my_uploader.py"]
+CMD ["faust", "-A", "uploading", "worker", "-l", "info"]

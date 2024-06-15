@@ -1,6 +1,6 @@
 import faust
 
-app = faust.App('data_processing', broker='kafka://broker:29092', store='memory://')
+app = faust.App('data_processing', broker='kafka://broker1:29092', store='memory://')
 
 class AggregatedData(faust.Record):
     sensor_id : int

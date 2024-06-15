@@ -2,7 +2,7 @@ import faust
 import random
 import datetime as dt
 
-app = faust.App('data_aggregation', broker='kafka://broker:29092', store='memory://')
+app = faust.App('data_aggregation', broker='kafka://broker1:29092', store='memory://')
 
 class AggregatedData(faust.Record):
     sensor_id : int

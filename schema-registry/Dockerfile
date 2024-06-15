@@ -1,3 +1,6 @@
+# Docker file: init-schema-registry
+# Description: see docker-compose.yml
+
 FROM python:3.10.12-slim
 
 WORKDIR /schema-registry

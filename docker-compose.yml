@@ -1,7 +1,13 @@
 ---
-#version: '3'
+# Docker-Compose file 
+#  
+# In this file the single microservices of the cluster are defined as docker containers, configured and all together orchestrated by Docker.
+# Configurations of the docker containers depend on used docker image with its version, port allocations, network, volume and environment variables.
+
+
 services:
 
+  # zookeeper: overall management of kafka cluster
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     hostname: zookeeper
@@ -11,11 +17,14 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - default
 
-  broker:
+  # broker1: management of data flows/topics in the cluster (three brokers available for replication)
+  broker1:
     image: confluentinc/cp-enterprise-kafka:latest
-    hostname: broker
-    container_name: broker
+    hostname: broker1
+    container_name: broker1
     depends_on:
       - zookeeper
     restart: unless-stopped
@@ -24,43 +33,100 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker1:29092,OUTSIDE://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    networks:
+      - default
 
+  # broker2: management of data flows/topics in the cluster (three brokers available for replication)
+  broker2:
+    image: confluentinc/cp-enterprise-kafka:latest
+    hostname: broker2
+    container_name: broker2
+    depends_on:
+      - zookeeper
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker2:29092,OUTSIDE://localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9093
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    networks:
+      - default
+  
+  # broker3: management of data flows/topics in the cluster (three brokers available for replication)
+  broker3:
+    image: confluentinc/cp-enterprise-kafka:latest
+    hostname: broker3
+    container_name: broker3
+    depends_on:
+      - zookeeper
+    restart: unless-stopped
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker3:29092,OUTSIDE://localhost:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9094
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    networks:
+      - default
+
+  # schema-registry: manages data schemas of the topics in the kafka cluster
   schema-registry:
     image: confluentinc/cp-schema-registry:latest
     hostname: schema-registry
     container_name: schema-registry
     depends_on:
-      - broker
+      - broker1
       - zookeeper
     ports:
       - "8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+    networks:
+      - default
 
+  # ingestion_connector: Source Connect cluster (FileSource) to append external data source (csv file) to the kafka cluster
   ingestion_connector:
     image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
     hostname: ingestion_connector
     container_name: ingestion_connector
     depends_on:
-      - broker
+      - broker1
       - schema-registry
     ports:
       - "8083:8083"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
       CONNECT_REST_ADVERTISED_HOST_NAME: ingestion_connector
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: ingestion_connector
-      #CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
       CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-source
       CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-source
       CONNECT_STATUS_STORAGE_TOPIC: connect-status-source
@@ -69,27 +135,23 @@ services:
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
-      #CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081 
-      #CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      #CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      #CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      #CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
-      #CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
     volumes:
       - ./simulation_data:/simulation_data
+    networks:
+      - default
 
+  # db_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing productive data of the cluster
   db_connector:
     image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
     hostname: db_connector
     container_name: db_connector
     depends_on:
-      - broker
+      - broker1
       - schema-registry
     ports:
       - "8084:8084"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
       CONNECT_REST_ADVERTISED_HOST_NAME: db_connector
       CONNECT_REST_PORT: 8084
       CONNECT_GROUP_ID: db_connector
@@ -101,7 +163,6 @@ services:
       CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
       CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
@@ -109,95 +170,21 @@ services:
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-    # #image: confluentinc/cp-kafka-connect:latest
-    # image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
-    # hostname: db_connector
-    # container_name: db_connector
-    # depends_on:
-    #   - broker
-    #   - schema-registry
-    # environment:
-    #   CONNECT_BOOTSTRAP_SERVERS: broker:29092
-    #   CONNECT_REST_PORT: 8084
-    #   CONNECT_GROUP_ID: "db_connector"
-    #   CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-sink
-    #   CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-    #   CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
-    #   CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-sink
-    #   CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
-    #   CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink
-    #   CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-    #   CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
-    #   #CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-    #   CONNECT_VALUE_CONVERTER: "io.confluent.connect.avro.AvroConverter"
-    #   CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-    #   CONNECT_REST_ADVERTISED_HOST_NAME: "db_connector"
-    #   CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
-    #   # CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
-    #   # CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
-    # ports:
-    #   - "8084:8084"
-    # volumes:
-    #   - ./connect-plugins:/usr/share/java/kafka-connect-plugins
+    networks:
+      - default  
 
-
-    # image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
-    # hostname: db_connector
-    # container_name: db_connector
-    # depends_on:
-    #   - broker
-    #   - schema-registry
-    # ports:
-    #   - "8084:8084"
-    # environment:
-    #   CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
-    #   CONNECT_REST_ADVERTISED_HOST_NAME: db_connector
-    #   CONNECT_REST_PORT: 8084
-    #   CONNECT_GROUP_ID: db_connector
-    #   CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-sink
-    #   CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-    #   CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
-    #   CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-sink
-    #   CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
-    #   CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink
-    #   CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-    #   #CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-    #   #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
-    #   CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-    #   CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-    #   CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-    #   #CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-    #   CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-    #   CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-    #   CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-    #   CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
-    #   CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
-    #   SCHEMAS_ENABLE: "false"
-
+  # metrics_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing performance metrics of the cluster
   metrics_connector:
     image: lsstsqre/cp-kafka-connect:5.5.2-timestampunit
     hostname: metrics_connector
     container_name: metrics_connector
     depends_on:
-      - broker
+      - broker1
       - schema-registry
     ports:
       - "8085:8085"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
       CONNECT_REST_ADVERTISED_HOST_NAME: metrics_connector
       CONNECT_REST_PORT: 8085
       CONNECT_GROUP_ID: metrics_connector
@@ -209,7 +196,6 @@ services:
       CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink-metrics
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      #CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
       CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
@@ -217,17 +203,21 @@ services:
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+    networks:
+      - default
 
+  # control-center: Frontend hub to manage and check health and functionality of the kafka cluster
   control-center:
     image: confluentinc/cp-enterprise-control-center:latest
     hostname: control-center
     container_name: control-center
     depends_on:
       - zookeeper
-      - broker
+      - broker1
       - schema-registry
       - ingestion_connector
       - db_connector
+      - metrics_connector
     deploy:
       restart_policy:
         condition: on-failure
@@ -237,65 +227,73 @@ services:
     ports:
       - "9021:9021"
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
       CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      CONTROL_CENTER_REPLICATION_FACTOR: 1
-      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
-      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
-      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-      # CONTROL_CENTER_CONNECT_CLUSTER: '["ingestion_connector", "db_connector"]'
-      # CONTROL_CENTER_CONNECT_CLUSTER_URL: '["http://ingestion_connector:8083", "http://db_connector:8084"]'
+      CONTROL_CENTER_REPLICATION_FACTOR: 3
+      # CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      # CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      # CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      # CONTROL_CENTER_CONNECT_CLUSTER: "db_connector:8084"
+      #CONTROL_CENTER_CONNECT_CLUSTER: '["ingestion_connector:8083", "db_connector:8084", "metrics_connector:8085"]'
+      #CONTROL_CENTER_CONNECT_CLUSTER_URL: '["http://ingestion_connector:8083", "http://db_connector:8084"]'
+      # CONTROL_CENTER_CONNECT_CLUSTER_URL: "http://db_connector:8084"
       PORT: 9021
+    networks:
+      - default
 
-  init-schema-registry:
-    build:
-      context: ./schema-registry
-    depends_on:
-      - broker
-      - schema-registry
-
+  # init-kafka-topics: defines the topics in the kafka cluster 
   init-kafka-topics:
     image: confluentinc/cp-kafka:latest
     depends_on:
-      - broker
+      - broker1
       - schema-registry
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
       # blocks until broker is reachable
-      kafka-topics --bootstrap-server broker:29092 --list
+      kafka-topics --bootstrap-server broker1:29092 --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_raw_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_aggregated_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_processed_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker:29092 --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_raw_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_aggregated_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_processed_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
-      kafka-topics --bootstrap-server broker:29092 --list
+      kafka-topics --bootstrap-server broker1:29092 --list
       "
 
+  # init-schema-registry: defines schemas of the topics in the kafka cluster 
+  init-schema-registry:
+    build:
+      context: ./schema-registry
+    depends_on:
+      - broker1
+      - schema-registry
+
+  # init-databases: creates influx databases for storing productive and metrics data
   init-databases:
     build:
       context: ./databases
     depends_on:
-      - broker
+      - broker1
       - influxdb
 
+  # IoT_sensor_data_simulation_smartwatch: simulates an IoT data source of type smartwatch (is a connector instance inside ingestion_connector cluster)
   IoT_sensor_data_simulation_smartwatch:
     image: confluentinc/cp-kafka:latest
     container_name: IoT_sensor_data_simulation_smartwatch
     depends_on:
-      - broker
+      - broker1
       - ingestion_connector     
     restart: unless-stopped 
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
       echo -e 'Waiting for ingestion_connector to be launched...'
-      cub kafka-ready -b broker:29092 1 20 && sleep 15 && \
+      cub kafka-ready -b broker1:29092 1 20 && sleep 15 && \
       curl -X POST -H 'Content-Type: application/json' --data '{
         \"name\": \"csv-file-source\",
         \"config\": {
@@ -312,10 +310,10 @@ services:
       "
     volumes:
       - ./simulation_data:/simulation_data
-    # networks: 
-    #   - default
+    networks:
+      - default
 
-
+  # influxdb: external InfluxDB database for storing productive and metrics data 
   influxdb:
     image: influxdb:1.8.5
     container_name: influxdb
@@ -330,6 +328,7 @@ services:
       - INFLUXDB_USER=admin
       - INFLUXDB_USER_PASSWORD=admin
 
+  # kafkaconnect_influxdb_sink_productive: stores productive data after being processed in the kafka cluster (is a connector instance inside db_connector cluster)
   kafkaconnect_influxdb_sink_productive:
     image: lsstsqre/kafkaconnect:1.3.1
     container_name: kafkaconnect_influxdb_sink_productive
@@ -339,20 +338,11 @@ services:
     entrypoint: kafkaconnect
     environment:
       KAFKA_CONNECT_URL: http://db_connector:8084
-      KAFKA_BROKER_URL: broker:29092
+      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
       KAFKA_CONNECT_TOPIC: topic_upload_data
-      # CONNECTOR_CLASS: "com.datamountaineer.streamreactor.connect.influx.InfluxSinkConnector"
-      # TASKS_MAX: "1"
-      # TOPICS: "topic_upload_data"
-      # KAFKA_CONNECTION_USER: "admin"
-      # KAFKA_CONNECTION_PASSWORD: "admin"
-      # KAFKA_CONNECT_DATABASE: "data_storage"
-      # KAFKA_CONNECT_INFLUX_KCQ: "INSERT INTO topic_upload_data SELECT * FROM topic_upload_data"
-      # KAFKA_CONNECT_PROGRESS_ENABLED: "true"
-      # KAFKA_CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
-      # KAFKA_CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
 
+  # kafkaconnect_influxdb_sink_metrics: stores metrics data of the kafka cluster (is a connector instance inside metrics_connector cluster)
   kafkaconnect_influxdb_sink_metrics:
     image: lsstsqre/kafkaconnect:1.3.1
     container_name: kafkaconnect_influxdb_sink_metrics
@@ -362,97 +352,110 @@ services:
     entrypoint: kafkaconnect
     environment:
       KAFKA_CONNECT_URL: http://metrics_connector:8085
-      KAFKA_BROKER_URL: broker:29092
+      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
       KAFKA_CONNECT_TOPIC: topic_kafka_metrics
 
+  # init-kafkaconnect_influxdb_sink_productive: initializes sink connector instance inside db_connector cluster for productive data
   init-kafkaconnect_influxdb_sink_productive:
     image: lsstsqre/kafkaconnect:1.3.1
     container_name: init-kafkaconnect_influxdb_sink_productive
     depends_on:
       - kafkaconnect_influxdb_sink_productive
       - db_connector
+    restart: unless-stopped 
     environment:
       KAFKA_CONNECT_URL: http://db_connector:8084
-      KAFKA_BROKER_URL: broker:29092
+      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
       KAFKA_CONNECT_TOPIC: topic_upload_data
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
       echo -e 'Waiting for db_connector to be launched...'
-      sleep 60
+      sleep 10
 
       echo -e 'Creating InfluxDB Sink Instance: Data storage...'
       # create Instance of InfluxDB Sink for productive smartwatch data
       kafkaconnect create influxdb-sink -d data_storage topic_upload_data
       "
 
+  # init-kafkaconnect_influxdb_sink_metrics: initializes sink connector instance inside db_connector cluster for metrics data
   init-kafkaconnect_influxdb_sink_metrics:
     image: lsstsqre/kafkaconnect:1.3.1
     container_name: init-kafkaconnect_influxdb_sink_metrics
     depends_on:
       - kafkaconnect_influxdb_sink_metrics
       - metrics_connector
+    restart: unless-stopped 
     environment:
       KAFKA_CONNECT_URL: http://metrics_connector:8085
-      KAFKA_BROKER_URL: broker:29092
+      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:8086
       KAFKA_CONNECT_TOPIC: topic_kafka_metrics
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
       echo -e 'Waiting for metrics_connector to be launched...'
-      sleep 60
+      sleep 10
 
       echo -e 'Creating InfluxDB Sink Instance: Kafka metrics...'
       # create Instance of InfluxDB Sink for Kafka metrics data
       kafkaconnect create influxdb-sink -d kafka_metrics topic_kafka_metrics
       "
 
+  # data_simulator: provides sample data for smartwatch sensor simulation
   data_simulator:
     build:
-      context: ./simulation_data
+      context: ./data_simulator
     depends_on:
-      - broker
+      - broker1
     ports:
       - 4000:4000
     volumes:
-      - ./simulation_data:/simulation_data
-    
+      - ./data_simulator:/data_simulator
+    networks:
+      - default
+
+  # data_aggregation: fetches raw sensor data and aggregates data to a proper format
   data_aggregation:
     build: ./data_aggregation
     depends_on:
-      - broker
+      - broker1
     restart: unless-stopped
     environment:
-      - KAFKA_BROKER=broker:29092
+      - KAFKA_BROKER='broker1:29092,broker2:29092,broker3:29092'
     networks:
       - default
 
+  # data_processing: fetches aggregated sensor data and processes data with some calculations
   data_processing:
     build: ./data_processing
     depends_on:
-      - broker
+      - broker1
     restart: unless-stopped
     environment:
-      - KAFKA_BROKER=broker:29092
+      - KAFKA_BROKER='broker1:29092,broker2:29092,broker3:29092'
     networks:
       - default
 
+  # data_upload: fetches processed data and uploads data to influxdb data sink
   data_upload:
     build:
       context: ./data_upload
     restart: unless-stopped
     depends_on:
-      - broker
+      - broker1
       - init-kafka-topics
     ports:
       - 2000:2000
     environment:
-      - KAFKA_BROKER=broker:29092
+      - KAFKA_BROKER='broker1:29092,broker2:29092,broker3:29092'
       - SCHEMA_REGISTRY_URL=http://schema-registry:8081
+    networks:
+      - default
 
+  # grafana: dashboard to have an insight into the data flows and processed IoT sensor data inside the kafka cluster
   grafana:
     image: grafana/grafana:latest
     depends_on:
@@ -465,6 +468,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+    networks:
+      - default
 
 volumes:
   influxdb_data:

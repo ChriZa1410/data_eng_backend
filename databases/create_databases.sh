@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# create_databases.sh
-#  
+# create_databases.sh 
+#
 # In this file the InfluxDB databases are created to store productive and metrics data.
 
 set -e
 
-# Wait until influxdb container is started
+# Wait until influxdb container has started
 while ! curl -sL -I "http://influxdb:8086/ping" > /dev/null; do
   echo "Waiting for InfluxDB container to start..."
 done

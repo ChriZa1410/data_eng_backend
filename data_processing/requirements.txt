@@ -1,1 +1,5 @@
+# data_processing/requirements.txt: 
+#
+# Defines necessary packages to import into docker container
+
 faust

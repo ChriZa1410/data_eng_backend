@@ -1,1 +1,5 @@
+# data_aggregation/requirements.txt: 
+#
+# Defines necessary packages to import into docker container
+
 faust

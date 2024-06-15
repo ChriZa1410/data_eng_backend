@@ -136,7 +136,7 @@ services:
       CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
     volumes:
-      - ./simulation_data:/simulation_data
+      - ./data_simulator:/data_simulator
     networks:
       - default
 
@@ -299,7 +299,7 @@ services:
         \"config\": {
           \"connector.class\": \"FileStreamSource\", 
           \"tasks.max\": \"1\", 
-          \"file\": \"/simulation_data/smartwatch_heartrate_source_data.csv\", 
+          \"file\": \"/data_simulator/smartwatch_heartrate_source_data.csv\", 
           \"topic\": \"topic_raw_data\",
           \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
           \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
@@ -309,7 +309,7 @@ services:
       sleep infinity
       "
     volumes:
-      - ./simulation_data:/simulation_data
+      - ./data_simulator:/data_simulator
     networks:
       - default
 
@@ -468,6 +468,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning
     networks:
       - default
 

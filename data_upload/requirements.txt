@@ -1,15 +1,8 @@
-# confluent-kafka==2.3.0
-# fastavro==1.9.4
-# requests==2.31.0
-
+# data_upload/requirements.txt: 
+#
+# Defines necessary packages to import into docker container
 
 faust
 avro-python3
 confluent_kafka
 confluent_kafka[avro]
-
-# faust
-# #faust-avro==0.4.0
-# confluent-kafka
-# fastavro==1.4.7
-# requests

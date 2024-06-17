@@ -6,13 +6,15 @@
 
 set -e
 
+INFLUXDB_CONTAINER_PORT=8086
+
 # Wait until influxdb container has started
-while ! curl -sL -I "http://influxdb:8086/ping" > /dev/null; do
+while ! curl -sL -I "http://influxdb:$INFLUXDB_CONTAINER_PORT/ping" > /dev/null; do
   echo "Waiting for InfluxDB container to start..."
 done
 
 # Send POST request to create influxdb databases in influxdb container
 echo 'Creating databases...'
-curl -XPOST "http://influxdb:8086/query" --data-urlencode "q=CREATE DATABASE data_storage"
-curl -XPOST "http://influxdb:8086/query" --data-urlencode "q=CREATE DATABASE kafka_metrics"
+curl -XPOST "http://influxdb:$INFLUXDB_CONTAINER_PORT/query" --data-urlencode "q=CREATE DATABASE data_storage"
+curl -XPOST "http://influxdb:$INFLUXDB_CONTAINER_PORT/query" --data-urlencode "q=CREATE DATABASE kafka_metrics"
 

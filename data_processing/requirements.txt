@@ -2,4 +2,4 @@
 #
 # Defines necessary packages to import into docker container
 
-faust
+faust==1.10.4

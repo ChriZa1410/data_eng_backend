@@ -34,13 +34,13 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:${ZOOKEEPER_CONTAINER_PORT}'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker1:29092,OUTSIDE://localhost:${BROKER1_CONTAINER_PORT}
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},OUTSIDE://localhost:${BROKER1_CONTAINER_PORT}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:${BROKER1_CONTAINER_PORT}
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},OUTSIDE://0.0.0.0:${BROKER1_CONTAINER_PORT}
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_CONTAINER_PORT}
     networks:
       - default
@@ -59,13 +59,13 @@ services:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:${ZOOKEEPER_CONTAINER_PORT}'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker2:29092,OUTSIDE://localhost:${BROKER2_CONTAINER_PORT}
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},OUTSIDE://localhost:${BROKER2_CONTAINER_PORT}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:${BROKER2_CONTAINER_PORT}
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},OUTSIDE://0.0.0.0:${BROKER2_CONTAINER_PORT}
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_CONTAINER_PORT}
     networks:
       - default
@@ -84,13 +84,13 @@ services:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:${ZOOKEEPER_CONTAINER_PORT}'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker3:29092,OUTSIDE://localhost:${BROKER3_CONTAINER_PORT}
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},OUTSIDE://localhost:${BROKER3_CONTAINER_PORT}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:${BROKER3_CONTAINER_PORT}
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},OUTSIDE://0.0.0.0:${BROKER3_CONTAINER_PORT}
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_CONTAINER_PORT}
     networks:
       - default
@@ -107,7 +107,7 @@ services:
       - ${SCHEMA_REGISTRY_HOST_PORT}:${SCHEMA_REGISTRY_CONTAINER_PORT}
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:${SCHEMA_REGISTRY_CONTAINER_PORT}
     networks:
       - default
@@ -123,7 +123,7 @@ services:
     ports:
       - ${INFLUXDB_INGESTION_CONNECTOR_HOST_PORT}:${INFLUXDB_INGESTION_CONNECTOR_CONTAINER_PORT}
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
       CONNECT_REST_ADVERTISED_HOST_NAME: ingestion_connector
       CONNECT_REST_PORT: ${INFLUXDB_INGESTION_CONNECTOR_CONTAINER_PORT}
       CONNECT_GROUP_ID: ingestion_connector
@@ -151,7 +151,7 @@ services:
     ports:
       - ${INFLUXDB_PROD_CONNECTOR_HOST_PORT}:${INFLUXDB_PROD_CONNECTOR_CONTAINER_PORT}
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
       CONNECT_REST_ADVERTISED_HOST_NAME: db_connector
       CONNECT_REST_PORT: ${INFLUXDB_PROD_CONNECTOR_CONTAINER_PORT}
       CONNECT_GROUP_ID: db_connector
@@ -184,7 +184,7 @@ services:
     ports:
       - ${INFLUXDB_METRICS_CONNECTOR_HOST_PORT}:${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
       CONNECT_REST_ADVERTISED_HOST_NAME: metrics_connector
       CONNECT_REST_PORT: ${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
       CONNECT_GROUP_ID: metrics_connector
@@ -215,9 +215,6 @@ services:
       - zookeeper
       - broker1
       - schema-registry
-      - ingestion_connector
-      - db_connector
-      - metrics_connector
     deploy:
       restart_policy:
         condition: on-failure
@@ -227,17 +224,10 @@ services:
     ports:
       - ${CP_CONTROL_CENTER_HOST_PORT}:${CP_CONTROL_CENTER_CONTAINER_PORT}
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker1:29092,broker2:29092,broker3:29092'
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
       CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:${ZOOKEEPER_CONTAINER_PORT}'
       CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:SCHEMA_REGISTRY_CONTAINER_PORT"
       CONTROL_CENTER_REPLICATION_FACTOR: 3
-      # CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
-      # CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
-      # CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-      # CONTROL_CENTER_CONNECT_CLUSTER: "db_connector:8084"
-      #CONTROL_CENTER_CONNECT_CLUSTER: '["ingestion_connector:8083", "db_connector:8084", "metrics_connector:8085"]'
-      #CONTROL_CENTER_CONNECT_CLUSTER_URL: '["http://ingestion_connector:8083", "http://db_connector:8084"]'
-      # CONTROL_CENTER_CONNECT_CLUSTER_URL: "http://db_connector:8084"
       PORT: ${CP_CONTROL_CENTER_CONTAINER_PORT}
     networks:
       - default
@@ -252,17 +242,17 @@ services:
     command: |
       "
       # blocks until broker is reachable
-      kafka-topics --bootstrap-server broker1:29092 --list
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_raw_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_aggregated_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_processed_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker1:29092 --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_raw_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_aggregated_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_processed_data --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
-      kafka-topics --bootstrap-server broker1:29092 --list
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --list
       "
 
   # init-schema-registry: defines schemas of the topics in the kafka cluster 
@@ -293,7 +283,7 @@ services:
     command: |
       "
       echo -e 'Waiting for ingestion_connector to be launched...'
-      cub kafka-ready -b broker1:29092 1 20 && sleep 15 && \
+      cub kafka-ready -b broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} 1 20 && sleep 15 && \
       curl -X POST -H 'Content-Type: application/json' --data '{
         \"name\": \"csv-file-source\",
         \"config\": {
@@ -338,11 +328,11 @@ services:
     entrypoint: kafkaconnect
     environment:
       KAFKA_CONNECT_URL: http://db_connector:${INFLUXDB_PROD_CONNECTOR_CONTAINER_PORT}
-      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
+      KAFKA_BROKER_URL: broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
       KAFKA_CONNECT_TOPIC: topic_upload_data
 
-  # kafkaconnect_influxdb_sink_metrics: stores metrics data of the kafka cluster (is a connector instance inside metrics_connector cluster)
+  # kafkaconnect_influxdb_sink_metrics: stores metrics data after being processed in the kafka cluster (is a connector instance inside metrics_connector cluster)
   kafkaconnect_influxdb_sink_metrics:
     image: lsstsqre/kafkaconnect:${LSSTSQRE_CONNECT_VERSION}
     container_name: kafkaconnect_influxdb_sink_metrics
@@ -352,7 +342,7 @@ services:
     entrypoint: kafkaconnect
     environment:
       KAFKA_CONNECT_URL: http://metrics_connector:${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
-      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
+      KAFKA_BROKER_URL: broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
       KAFKA_CONNECT_TOPIC: topic_kafka_metrics
 
@@ -366,7 +356,7 @@ services:
     restart: unless-stopped 
     environment:
       KAFKA_CONNECT_URL: http://db_connector:${INFLUXDB_PROD_CONNECTOR_CONTAINER_PORT}
-      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
+      KAFKA_BROKER_URL: broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
       KAFKA_CONNECT_TOPIC: topic_upload_data
     entrypoint: [ '/bin/sh', '-c' ]
@@ -390,7 +380,7 @@ services:
     restart: unless-stopped 
     environment:
       KAFKA_CONNECT_URL: http://metrics_connector:${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
-      KAFKA_BROKER_URL: broker1:29092,broker2:29092,broker3:29092
+      KAFKA_BROKER_URL: broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
       KAFKA_CONNECT_TOPIC: topic_kafka_metrics
     entrypoint: [ '/bin/sh', '-c' ]
@@ -426,11 +416,11 @@ services:
       - ${DATA_AGGREGATION_HOST_PORT}:${DATA_AGGREGATION_CONTAINER_PORT}
     restart: unless-stopped
     environment:
-      - KAFKA_BROKER='broker1:29092,broker2:29092,broker3:29092'
+      - KAFKA_BROKER='broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
     networks:
       - default
 
-  # data_processing: fetches aggregated sensor data and processes data with some calculations
+  # data_processing: fetches aggregated sensor data and processes data with some calculations (e.g. max/min/mean values)
   data_processing:
     build: ./data_processing
     depends_on:
@@ -439,7 +429,7 @@ services:
       - ${DATA_PROCESSING_HOST_PORT}:${DATA_PROCESSING_CONTAINER_PORT}
     restart: unless-stopped
     environment:
-      - KAFKA_BROKER='broker1:29092,broker2:29092,broker3:29092'
+      - KAFKA_BROKER='broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
     networks:
       - default
 
@@ -454,12 +444,12 @@ services:
     ports:
       - ${DATA_UPLOAD_HOST_PORT}:${DATA_UPLOAD_CONTAINER_PORT}
     environment:
-      - KAFKA_BROKER='broker1:29092,broker2:29092,broker3:29092'
+      - KAFKA_BROKER='broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
       - SCHEMA_REGISTRY_URL=http://schema-registry:${SCHEMA_REGISTRY_CONTAINER_PORT}
     networks:
       - default
 
-  # grafana: dashboard to have an insight into the data flows and processed IoT sensor data inside the kafka cluster
+  # grafana: dashboard to monitor processed IoT sensor data and metrics inside the kafka cluster
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
     depends_on:

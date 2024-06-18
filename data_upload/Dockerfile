@@ -1,13 +1,14 @@
-FROM python:3.10.12-slim
+# Docker file: data_upload
+#
+# Description: see docker-compose.yml
 
-WORKDIR /data_upload
+FROM python:3.9-slim
 
-RUN apt-get update
-RUN apt install python3-pip -y
-RUN pip install --upgrade pip 
-RUN apt-get install curl -y --no-install-recommends
+WORKDIR /bin/data_upload
 
-COPY . /data_upload/
-RUN pip install -r /data_upload/requirements.txt
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
 
-CMD ["python3", "./my_uploader.py"]
+COPY uploading.py ./
+
+CMD ["faust", "-A", "uploading", "worker", "-l", "info"]

@@ -1,3 +1,7 @@
+# Docker file: init-databases
+#
+# Description: see docker-compose.yml
+
 FROM python:3.10.12-slim
 
 WORKDIR /databases

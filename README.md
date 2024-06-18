@@ -42,7 +42,7 @@ To get the backend application running on a local machine, the following steps a
 
 - Goals:  
   This project realizes an example backend infrastructure for handling data intensive real time stream processing applications. It was developed considering the main aspects reliability, scalability and maintainability.  
-  Reliability and scalability can be achieved through the implementation of replication via three individual Kafka brokers which can balance the load dynamically depending on the amount of processed data. The brokers can also substitute each other in case of failures.  
+  Reliability and scalability can be achieved through the implementation of replication via three individual Kafka brokers which can balance the load dynamically depending on the amount of processed data. The brokers can also substitute each other in case of failures. On top of that the topics are created with 3 partitions and a replication factor of 3 which also provides reliability, scalability and especially fault tolerance and data safety inside the kafka cluster.
   With the deployment of individual microservices which communicate via defined interfaces maintainability is easily possible. With this restarting single microservices is also possible in case of disturbances.  
 
   As the infrastructure consists of more components the microservices are implemented as Docker containers which are orchestrated by Docker-Compose centrally what enables the administrator to manage and maintain the system.  

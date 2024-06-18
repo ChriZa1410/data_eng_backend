@@ -22,10 +22,7 @@
   "links": [],
   "panels": [
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -74,10 +71,7 @@
       "pluginVersion": "10.4.4",
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT COUNT(DISTINCT sensor_id) FROM \"topic_upload_data\"",
           "rawQuery": true,
           "refId": "A",
@@ -88,10 +82,7 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -140,10 +131,7 @@
       "pluginVersion": "10.4.4",
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT MAX(current_value) FROM topic_upload_data",
           "rawQuery": true,
           "refId": "A",
@@ -154,10 +142,7 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -207,10 +192,7 @@
       "pluginVersion": "10.4.4",
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT MIN(current_value) FROM topic_upload_data",
           "rawQuery": true,
           "refId": "A",
@@ -221,10 +203,7 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -273,10 +252,7 @@
       "pluginVersion": "10.4.4",
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT MEAN(mean_value) FROM topic_upload_data",
           "rawQuery": true,
           "refId": "A",
@@ -287,10 +263,7 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "gridPos": {
         "h": 3,
         "w": 4,
@@ -311,10 +284,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT LAST(timestamp) FROM topic_upload_data",
           "rawQuery": true,
           "refId": "A",
@@ -325,10 +295,7 @@
       "type": "logs"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -405,10 +372,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 1;",
           "rawQuery": true,
           "refId": "A",
@@ -419,10 +383,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -499,10 +460,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 2;",
           "rawQuery": true,
           "refId": "A",
@@ -513,10 +471,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -593,10 +548,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 3;",
           "rawQuery": true,
           "refId": "A",
@@ -607,10 +559,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -687,10 +636,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 4;",
           "rawQuery": true,
           "refId": "A",
@@ -701,10 +647,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -781,10 +724,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 5;",
           "rawQuery": true,
           "refId": "A",
@@ -795,10 +735,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -875,10 +812,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 6;",
           "rawQuery": true,
           "refId": "A",
@@ -889,10 +823,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -969,10 +900,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 7;",
           "rawQuery": true,
           "refId": "A",
@@ -983,10 +911,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1063,10 +988,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 8;",
           "rawQuery": true,
           "refId": "A",
@@ -1077,10 +999,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1157,10 +1076,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 9;",
           "rawQuery": true,
           "refId": "A",
@@ -1171,10 +1087,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "adoun21nqxla8f"
-      },
+      "datasource": "InfluxDB",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1251,10 +1164,7 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "adoun21nqxla8f"
-          },
+          "datasource": "InfluxDB",
           "query": "SELECT * FROM \"topic_upload_data\" WHERE sensor_id = 10;",
           "rawQuery": true,
           "refId": "A",

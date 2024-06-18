@@ -173,39 +173,6 @@ services:
     networks:
       - default  
 
-  # metrics_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing performance metrics of the cluster
-  metrics_connector:
-    image: lsstsqre/cp-kafka-connect:${LSSTSQRE_CP_CONNECT_VERSION}
-    hostname: metrics_connector
-    container_name: metrics_connector
-    depends_on:
-      - broker1
-      - schema-registry
-    ports:
-      - ${INFLUXDB_METRICS_CONNECTOR_HOST_PORT}:${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
-    environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}'
-      CONNECT_REST_ADVERTISED_HOST_NAME: metrics_connector
-      CONNECT_REST_PORT: ${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
-      CONNECT_GROUP_ID: metrics_connector
-      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-sink-metrics
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
-      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-sink-metrics
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_STATUS_STORAGE_TOPIC: connect-status-sink-metrics
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_CONTAINER_PORT}
-      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_CONTAINER_PORT}
-      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/landoop/jars/lib"
-      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
-    networks:
-      - default
-
   # control-center: Frontend hub to manage and check health and functionality of the kafka cluster
   control-center:
     image: confluentinc/cp-enterprise-control-center:${CP_CONTROL_CENTER_VERSION}
@@ -249,7 +216,6 @@ services:
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_upload_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_aggregated_data --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_processed_data --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_kafka_metrics --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --list
@@ -263,7 +229,7 @@ services:
       - broker1
       - schema-registry
 
-  # init-databases: creates influx databases for storing productive and metrics data
+  # init-databases: creates influx databases for storing productive data
   init-databases:
     build:
       context: ./databases
@@ -303,7 +269,7 @@ services:
     networks:
       - default
 
-  # influxdb: external InfluxDB database for storing productive and metrics data 
+  # influxdb: external InfluxDB database for storing productive data 
   influxdb:
     image: influxdb:${INFLUXDB_VERSION}
     container_name: influxdb
@@ -332,20 +298,7 @@ services:
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
       KAFKA_CONNECT_TOPIC: topic_upload_data
 
-  # kafkaconnect_influxdb_sink_metrics: stores metrics data after being processed in the kafka cluster (is a connector instance inside metrics_connector cluster)
-  kafkaconnect_influxdb_sink_metrics:
-    image: lsstsqre/kafkaconnect:${LSSTSQRE_CONNECT_VERSION}
-    container_name: kafkaconnect_influxdb_sink_metrics
-    depends_on:
-      - metrics_connector
-      - influxdb
-    entrypoint: kafkaconnect
-    environment:
-      KAFKA_CONNECT_URL: http://metrics_connector:${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
-      KAFKA_BROKER_URL: broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}
-      KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
-      KAFKA_CONNECT_TOPIC: topic_kafka_metrics
-
+  
   # init-kafkaconnect_influxdb_sink_productive: initializes sink connector instance inside db_connector cluster for productive data
   init-kafkaconnect_influxdb_sink_productive:
     image: lsstsqre/kafkaconnect:${LSSTSQRE_CONNECT_VERSION}
@@ -370,29 +323,6 @@ services:
       kafkaconnect create influxdb-sink -d data_storage topic_upload_data
       "
 
-  # init-kafkaconnect_influxdb_sink_metrics: initializes sink connector instance inside db_connector cluster for metrics data
-  init-kafkaconnect_influxdb_sink_metrics:
-    image: lsstsqre/kafkaconnect:${LSSTSQRE_CONNECT_VERSION}
-    container_name: init-kafkaconnect_influxdb_sink_metrics
-    depends_on:
-      - kafkaconnect_influxdb_sink_metrics
-      - metrics_connector
-    restart: unless-stopped 
-    environment:
-      KAFKA_CONNECT_URL: http://metrics_connector:${INFLUXDB_METRICS_CONNECTOR_CONTAINER_PORT}
-      KAFKA_BROKER_URL: broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}
-      KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
-      KAFKA_CONNECT_TOPIC: topic_kafka_metrics
-    entrypoint: [ '/bin/sh', '-c' ]
-    command: |
-      "
-      echo -e 'Waiting for metrics_connector to be launched...'
-      sleep 10
-
-      echo -e 'Creating InfluxDB Sink Instance: Kafka metrics...'
-      # create Instance of InfluxDB Sink for Kafka metrics data
-      kafkaconnect create influxdb-sink -d kafka_metrics topic_kafka_metrics
-      "
 
   # data_simulator: provides sample data for smartwatch sensor simulation
   data_simulator:
@@ -449,7 +379,7 @@ services:
     networks:
       - default
 
-  # grafana: dashboard to monitor processed IoT sensor data and metrics inside the kafka cluster
+  # grafana: dashboard to monitor IoT sensor data processed inside the kafka cluster and uploaded to database
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
     depends_on:

@@ -35,21 +35,21 @@ To get the backend application running on a local machine, the following steps a
    ```
    docker-compose up -d --build
    ```
-    Note: After installing the packages it can take up to 90 seconds until cluster components are finally bootet and synchronised.
+    Note: After installing the packages it can take up to 90 seconds until cluster components are completely bootet and synchronised.
 
 
 # Project Description
 
 - Goals:  
-This project realizes an example backend infrastructure for handling data intensive real time stream processing applications. It was developed considering the main aspects reliability, scalability and maintainability.  
-Reliability and scalability can be achieved through the implementation of replication via three individual Kafka brokers which can balance the load dynamically depending on the data load. The brokers can also substitute each other in case of failures.  
-With the deployment of individual microservices which communicate via defined interfaces a manageable maintainability is achieved. With this restarting single microservices is also possible in case of disturbances.  
+  This project realizes an example backend infrastructure for handling data intensive real time stream processing applications. It was developed considering the main aspects reliability, scalability and maintainability.  
+  Reliability and scalability can be achieved through the implementation of replication via three individual Kafka brokers which can balance the load dynamically depending on the amount of processed data. The brokers can also substitute each other in case of failures.  
+  With the deployment of individual microservices which communicate via defined interfaces maintainability is easily possible. With this restarting single microservices is also possible in case of disturbances.  
 
-  As the infrastructure consists of more components the microservices are implemented as Docker containers which are orchestrated by Docker-Compose centrally to be able to manage and maintain the system.  
+  As the infrastructure consists of more components the microservices are implemented as Docker containers which are orchestrated by Docker-Compose centrally what enables the administrator to manage and maintain the system.  
 
 - Summary:  
 
-  The backend application receives heart rate values by several IoT smartwatch sensors (simulated input data provided by a *.csv file source). After aggregating the input data some processing calculations are done over all known sensor values. After that the sensor information is separated by sensor ID and then uploaded to an InfluxDB database. Uploaded data streams can be monitored by a Grafana dashboard accompanied by some metrics which give an overview of the Kafka cluster performance.  
+  The backend application receives heart rate values by several IoT smartwatch sensors (simulated input data provided by a *.csv file source). After aggregating the input data some processing calculations are done over all known sensor values. After that the sensor information is split by sensor ID and then uploaded to an InfluxDB database separately. Uploaded data streams can be monitored with a Grafana dashboard.  
 
 - Microservices (Kafka cluster components excluded):
   Main functionality:  
@@ -57,25 +57,21 @@ With the deployment of individual microservices which communicate via defined in
   - data_aggregation: fetches raw sensor data and aggregates data to a proper format
   - data_processing: fetches aggregated sensor data and processes data with some calculations (e.g. max/min/mean values for each sensor)
   - data_upload: fetches processed data and uploads data to Influxdb data sink
-  - grafana: monitoring processed IoT sensor data and metrics inside the kafka cluster
-  - influxdb: InfluxDB database to store productive and metrics data
+  - grafana: monitoring processed IoT sensor data by the kafka cluster
+  - influxdb: InfluxDB database to store productive data
 
   Kafka connect components:
   - ingestion_connector: Source Connect cluster (FileSource) to append external data source (csv file) to the kafka cluster
-  - db_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing productive data of the cluster
-  - metrics_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing performance metrics of the cluster
   - IoT_sensor_data_simulation_smartwatch: simulates an IoT data source of type smartwatch (is a *.csv file source connector instance inside ingestion_connector cluster)
+  - db_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing productive data of the cluster
   - kafkaconnect_influxdb_sink_productive: stores productive data after being processed in the kafka cluster (is a sink connector instance inside db_connector cluster)
-  - kafkaconnect_influxdb_sink_metrics: stores metrics data after being processed in the kafka cluster (is a sink connector instance inside metrics_connector cluster)
 
   Initialization and Kafka periphery:
   - init-kafka-topics: defines the topics in the kafka cluster 
   - init-schema-registry: initializes schemas of kafka topics
-  - init-databases: initializes InfluxDB databases
+  - init-databases: initializes InfluxDB database
   - init-kafkaconnect_influxdb_sink_productive: initializes sink connector instance inside db_connector cluster for productive data
-  - init-kafkaconnect_influxdb_sink_metrics: initializes sink connector instance inside db_connector cluster for metrics data
   - control-center: Frontend hub to manage and check health and functionality of the kafka cluster
-
 
   More details about the microservices' functionality can be found in comments inside the code files.
 
@@ -126,9 +122,9 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
 # External Interfaces
 
 - Grafana: `localhost:3000`  
-  Initial login: user = admin, password = admin (credentials are already preset and do not need to be changed)
-  Select one of the following dashboards for visualization:
-  - Smartwatch Heartrate - Dashboard
+  Initial login: user = admin, password = admin (credentials are already preset and do not need to be changed)  
+  
+  Smartwatch Heartrate - Dashboard
     - the number of smartwatch sensors monitored by the backend infrastructure
     - max. heart rate value over all sensors
     - min. heart rate value over all sensors
@@ -136,11 +132,8 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
     - timestamp of last recorded data sample
     - all recorded values and meta data of each monitored smartwatch sensor
 
-  - Smartwatch Metrics - Dashboard
-    - number of uploaded sensor values to database per minute
-    - latency of the sensor values from the data simulation to database upload
-
 - Control-Center: `localhost:9021`  
+
   Confluent Platform's control center provides the possibility to check information and data inside the Kafka cluster, e.g.:
     - health of the brokers
     - existing topics
@@ -161,11 +154,11 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
 - Implementation does not fulfill all possible requirements regarding:
   - error handling along all microservices
   - security configurations regarding the container communication
-  - deep analysis possibility via productive data and metrics dashboard
+  - deep analysis possibility via metrics data
 
 - Sensor simulation contains fix number of IoT sensors (10) and value ranges to test basic functionality. This does not represent a real smartwatch sensor range.
 - Overall performance of the infrastructure can still be improved, e.g. duration of startup
-- There may errors occure during container startup and synchronisation process. In this case some of the containers ned to be restarted.
+- There may errors occure during container startup and synchronisation process if startup of containers last too long. In this case some of the containers ned to be restarted.
 
 - Licences: 
   - Control Center: Confluent Enterprise License

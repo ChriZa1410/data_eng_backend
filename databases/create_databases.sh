@@ -14,7 +14,6 @@ while ! curl -sL -I "http://influxdb:$INFLUXDB_CONTAINER_PORT/ping" > /dev/null;
 done
 
 # Send POST request to create influxdb databases in influxdb container
-echo 'Creating databases...'
+echo 'Creating database...'
 curl -XPOST "http://influxdb:$INFLUXDB_CONTAINER_PORT/query" --data-urlencode "q=CREATE DATABASE data_storage"
-curl -XPOST "http://influxdb:$INFLUXDB_CONTAINER_PORT/query" --data-urlencode "q=CREATE DATABASE kafka_metrics"
 

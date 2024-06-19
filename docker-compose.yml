@@ -102,7 +102,10 @@ services:
     container_name: schema-registry
     depends_on:
       - broker1
+      - broker2
+      - broker3
       - zookeeper
+    restart: unless-stopped
     ports:
       - ${SCHEMA_REGISTRY_HOST_PORT}:${SCHEMA_REGISTRY_CONTAINER_PORT}
     environment:
@@ -228,6 +231,7 @@ services:
     depends_on:
       - broker1
       - schema-registry
+    restart: unless-stopped
 
   # init-databases: creates influx databases for storing productive data
   init-databases:

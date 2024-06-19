@@ -18,7 +18,7 @@ All components are realized in Docker containers and orchestrated by Docker-Comp
 # Prerequisites
 
 - [Linux OS](https://help.ubuntu.com/) (recommended distribution: Ubuntu 22.04.3 LTS) must be installed (e.g. in WSL2 or Virtual Machine environment)  
-- [Git](https://git-scm.com/doc) (reommended verion: 2.34.1) must be installed in the Linux environment  
+- [Git](https://git-scm.com/doc) (recommended version: 2.34.1) must be installed in the Linux environment  
 - [Docker Desktop](https://docs.docker.com/desktop/) (recommended version: 4.31.1) must be installed  
 - Recommended Docker settings (depending on host system availability): >= 12GB RAM usage, <=800% CPU usage (8 cores)
 - Internet connection is required for downloading docker containers  
@@ -164,7 +164,7 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
 
 - Sensor simulation contains fix number of IoT sensors (10) and value ranges to test basic functionality. This does not represent a real smartwatch sensor range.
 - Overall performance of the infrastructure can still be improved, e.g. duration of startup
-- There may errors occure during container startup and synchronisation process if startup of containers last too long. In this case some of the containers ned to be restarted.
+- Errors may occure during container startup and synchronisation process if the startup of containers last too long. In this case some of the containers need to be restarted.
 
 - Licences: 
   - Control Center: Confluent Enterprise License

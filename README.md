@@ -18,7 +18,7 @@ All components are realized in Docker containers and orchestrated by Docker-Comp
 # Prerequisites
 
 - [Linux OS](https://help.ubuntu.com/) (recommended distribution: Ubuntu 22.04.3 LTS) must be installed (e.g. in WSL2 or Virtual Machine environment)  
-- [Git](https://git-scm.com/doc) (recommended version: 2.34.1) must be installed in the Linux environment  
+- [Git](https://git-scm.com/doc) (recommended version: 2.34.1) must be installed in the Linux environment. Make sure to set git configuration core.filemode == true to keep executable right for shell scripts when cloning repository.  
 - [Docker Desktop](https://docs.docker.com/desktop/) (recommended version: 4.31.1) must be installed  
 - Recommended Docker settings (depending on host system availability): >= 12GB RAM usage, <=800% CPU usage (8 cores)
 - Internet connection is required for downloading docker containers  

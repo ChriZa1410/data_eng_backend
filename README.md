@@ -35,7 +35,7 @@ To get the backend application running on a local machine, the following steps a
    ```
    docker-compose up -d --build
    ```
-    Note: After installing the packages it can take up to 90 seconds until cluster components are completely bootet and synchronised.
+    Note: After installing the packages it can take up to 150 seconds until cluster components are completely bootet and synchronised.
 
 
 # Project Description
@@ -51,7 +51,7 @@ To get the backend application running on a local machine, the following steps a
 
   The backend application receives heart rate values by several IoT smartwatch sensors (simulated input data provided by a *.csv file source). After aggregating the input data some processing calculations are done over all known sensor values. After that the sensor information is split by sensor ID and then uploaded to an InfluxDB database separately. Uploaded data streams can be monitored with a Grafana dashboard.  
 
-- Microservices (Kafka cluster components excluded):
+- Microservices (Kafka cluster components excluded):  
   Main functionality:  
   - data_simulator: simulates IoT smartwatches by providing sensor values to *.csv file
   - data_aggregation: fetches raw sensor data and aggregates data to a proper format
@@ -124,7 +124,7 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
 - Grafana: `localhost:3000`  
   Initial login: user = admin, password = admin (credentials are already preset and do not need to be changed)  
   
-  Smartwatch Heartrate - Dashboard
+  Smartwatch Heartrate - Dashboard (choose Dashboard in the Dasboard Menu)
     - the number of smartwatch sensors monitored by the backend infrastructure
     - max. heart rate value over all sensors
     - min. heart rate value over all sensors

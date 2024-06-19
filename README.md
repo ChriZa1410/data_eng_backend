@@ -29,13 +29,19 @@ All components are realized in Docker containers and orchestrated by Docker-Comp
 To get the backend application running on a local machine, the following steps are required:
 1. Clone the repository
     ```
-    git clone https://github.com/ChriZa1410/data_eng_backend.git
+    git clone https://github.com/ChriZa1410/data_eng_backend.git  
     ```
-2. Launching the backend infrastructure running the Docker-Compose file inside the repository in detached mode
+    
+2. Launch the backend infrastructure by running the Docker-Compose file inside the repository in detached mode
    ```
    docker-compose up -d --build
    ```
-    Note: After installing the packages it can take up to 150 seconds until cluster components are completely bootet and synchronised.
+    Note: After installing the packages it can take up to 150 seconds until cluster components are completely bootet and synchronised.  
+
+3. Stop the backend infrastructure
+   ```
+   docker-compose down
+   ```
 
 
 # Project Description

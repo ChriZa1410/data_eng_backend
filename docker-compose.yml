@@ -216,9 +216,9 @@ services:
 
       echo -e 'Creating kafka topics'
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_raw_data --replication-factor 3 --partitions 3
-      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_upload_data --replication-factor 3 --partitions 3
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_aggregated_data --replication-factor 3 --partitions 3
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_processed_data --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --create --if-not-exists --topic topic_upload_data --replication-factor 3 --partitions 1
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} --list
@@ -242,7 +242,41 @@ services:
       - influxdb
 
   # IoT_sensor_data_simulation_smartwatch: simulates an IoT data source of type smartwatch (is a connector instance inside ingestion_connector cluster)
-  IoT_sensor_data_simulation_smartwatch:
+  
+  #### Productive ###: For launching productive data source, use following container configuration and deactivate container below by commenting code:
+  # IoT_sensor_data_simulation_smartwatch_PRODUCTIVE:
+  #   image: confluentinc/cp-kafka:${CP_KAFKA_CONNECT_VERSION}
+  #        \"file\": \"/data_simulator/smartwatch_heartrate_source_data.csv\", 
+  #         \"topic\": \"topic_raw_data\",
+  #         \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
+  #         \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
+  #         \"value.converter.schemas.enable\": \"false\"
+  #       }
+  #     }' http://ingestion_connector:${INFLUXDB_INGESTION_CONNECTOR_CONTAINER_PORT}/connectors && \
+  #     sleep infinity
+  #     "
+  #   volumes:
+  #     - ./data_simulator:/data_simulator
+  #   networks:
+  #     - default container_name: IoT_sensor_data_simulation_smartwatch
+  #   depends_on:
+  #     - broker1
+  #     - ingestion_connector     
+  #   restart: unless-stopped 
+  #   entrypoint: [ '/bin/sh', '-c' ]
+  #   command: |
+  #     "
+  #     echo -e 'Waiting for ingestion_connector to be launched...'
+  #     cub kafka-ready -b broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} 1 20 && sleep 15 && \
+  #     curl -X POST -H 'Content-Type: application/json' --data '{
+  #       \"name\": \"csv-file-source\",
+  #       \"config\": {
+  #         \"connector.class\": \"FileStreamSource\", 
+  #         \"tasks.max\": \"1\", 
+    
+
+  #### Testing ###: For launching testing data source, use following Container configuration and deactivate container above by commenting code:
+  IoT_sensor_data_simulation_smartwatch_TESTING:
     image: confluentinc/cp-kafka:${CP_KAFKA_CONNECT_VERSION}
     container_name: IoT_sensor_data_simulation_smartwatch
     depends_on:
@@ -259,7 +293,7 @@ services:
         \"config\": {
           \"connector.class\": \"FileStreamSource\", 
           \"tasks.max\": \"1\", 
-          \"file\": \"/data_simulator/smartwatch_heartrate_source_data.csv\", 
+          \"file\": \"/data_simulator/smartwatch_heartrate_source_data_test.csv\", 
           \"topic\": \"topic_raw_data\",
           \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
           \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
@@ -301,7 +335,7 @@ services:
       KAFKA_BROKER_URL: broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker2:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE},broker3:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE}
       KAFKA_CONNECT_INFLUXDB_URL: http://influxdb:${INFLUXDB_CONTAINER_PORT}
       KAFKA_CONNECT_TOPIC: topic_upload_data
-
+      KAFKA_CONNECT_AUTO_OFFSET_RESET: earliest
   
   # init-kafkaconnect_influxdb_sink_productive: initializes sink connector instance inside db_connector cluster for productive data
   init-kafkaconnect_influxdb_sink_productive:

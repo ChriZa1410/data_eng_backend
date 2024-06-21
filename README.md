@@ -12,6 +12,7 @@ All components are realized in Docker containers and orchestrated by Docker-Comp
 - [Project Description](#project-description)
 - [Project Structure](#project-structure)
 - [External Interfaces](#external-interfaces)
+- [Testing](#testing)
 - [Limitations](#limitations)
 - [Integrating Batch Pipeline](#integrating-batch-pipeline)
 - [Sources/Bibliography](#bibiography)
@@ -69,9 +70,11 @@ To get the backend application running on a local machine, the following steps a
 
   Kafka connect components:
   - ingestion_connector: Source Connect cluster (FileSource) to append external data source (csv file) to the kafka cluster
-  - IoT_sensor_data_simulation_smartwatch: simulates an IoT data source of type smartwatch (is a *.csv file source connector instance inside ingestion_connector cluster)
   - db_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing productive data of the cluster
   - kafkaconnect_influxdb_sink_productive: stores productive data after being processed in the kafka cluster (is a sink connector instance inside db_connector cluster)
+
+  - IoT_sensor_data_simulation_smartwatch_PRODUCTIVE: simulates an IoT data source of type smartwatch (is a \*.csv file source connector instance inside ingestion_connector cluster). Attention: You can only run *_PRODUCTIVE* OR *_TESTING* source at one time!
+  - IoT_sensor_data_simulation_smartwatch_TESTING: simulates an IoT data source of type smartwatch with a specific and stable test dataset (is a \*.csv file source connector instance inside ingestion_connector cluster). Attention: You can only run *_PRODUCTIVE* OR *_TESTING* source at one time! See [Testing](#testing) for testing the architecture. 
 
   Initialization and Kafka periphery:
   - init-kafka-topics: defines the topics in the kafka cluster 
@@ -80,7 +83,7 @@ To get the backend application running on a local machine, the following steps a
   - init-kafkaconnect_influxdb_sink_productive: initializes sink connector instance inside db_connector cluster for productive data
   - control-center: Frontend hub to manage and check health and functionality of the kafka cluster
 
-  More details about the microservices' functionality can be found in comments inside the code files.
+  More details about the microservices' functionality can be found in comments inside the code files.  
 
 ![Backend_infrastructure_concept](documentation/concept.jpg)  
 Source: Own illustration.
@@ -145,6 +148,18 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
     - health of the brokers
     - existing topics
     - monitoring the data sent via the topics as a consumer's point of view
+
+# Testing
+
+For testing the functionality of the architecture a stable test dataset can be used what leads to reproducable results (test file: *smartwatch_heartrate_source_data_test.csv*). To use the test dataset follow these steps:  
+1. In docker-compose.yml: Add block comment to deactivate container *IoT_sensor_data_simulation_smartwatch_PRODUCTIVE*
+2. In docker-compose.yml: Remove block comment to activate container *IoT_sensor_data_simulation_smartwatch_TESTING*
+3. Make sure that InfluxDB table *topic_upload_data* in database *data_storage* does not contain content (e.g. by executing "drop series from topic_upload_data")
+4. run command ```   docker-compose up -d   ```
+5. Check data flows in Grafana dashboard. Results should like this:
+
+![Archictecture testing results](documentation/test_results.jpg)  
+Source: Screenshot from own Grafana dashboard.
 
 # Limitations
 

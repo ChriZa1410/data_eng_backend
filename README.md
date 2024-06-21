@@ -151,11 +151,12 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
 
 # Testing
 
-For testing the functionality of the architecture a stable test dataset can be used what leads to reproducable results (test file: *smartwatch_heartrate_source_data_test.csv*). To use the test dataset follow these steps:  
+For testing the functionality of the architecture a stable test dataset can be used what leads to reproducable results (test file: *smartwatch_heartrate_source_data_test.csv*).  
+To use the test dataset follow these steps:  
 1. In docker-compose.yml: Add block comment to deactivate container *IoT_sensor_data_simulation_smartwatch_PRODUCTIVE*
 2. In docker-compose.yml: Remove block comment to activate container *IoT_sensor_data_simulation_smartwatch_TESTING*
 3. Make sure that InfluxDB table *topic_upload_data* in database *data_storage* does not contain content (e.g. by executing "drop series from topic_upload_data")
-4. run command ```   docker-compose up -d   ```
+4. Run command ``` docker-compose up -d ```
 5. Check data flows in Grafana dashboard. Results should like this:
 
 ![Archictecture testing results](documentation/test_results.jpg)  

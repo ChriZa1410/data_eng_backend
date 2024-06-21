@@ -244,39 +244,7 @@ services:
   # IoT_sensor_data_simulation_smartwatch: simulates an IoT data source of type smartwatch (is a connector instance inside ingestion_connector cluster)
   
   #### Productive ###: For launching productive data source, use following container configuration and deactivate container below by commenting code:
-  # IoT_sensor_data_simulation_smartwatch_PRODUCTIVE:
-  #   image: confluentinc/cp-kafka:${CP_KAFKA_CONNECT_VERSION}
-  #        \"file\": \"/data_simulator/smartwatch_heartrate_source_data.csv\", 
-  #         \"topic\": \"topic_raw_data\",
-  #         \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
-  #         \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
-  #         \"value.converter.schemas.enable\": \"false\"
-  #       }
-  #     }' http://ingestion_connector:${INFLUXDB_INGESTION_CONNECTOR_CONTAINER_PORT}/connectors && \
-  #     sleep infinity
-  #     "
-  #   volumes:
-  #     - ./data_simulator:/data_simulator
-  #   networks:
-  #     - default container_name: IoT_sensor_data_simulation_smartwatch
-  #   depends_on:
-  #     - broker1
-  #     - ingestion_connector     
-  #   restart: unless-stopped 
-  #   entrypoint: [ '/bin/sh', '-c' ]
-  #   command: |
-  #     "
-  #     echo -e 'Waiting for ingestion_connector to be launched...'
-  #     cub kafka-ready -b broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} 1 20 && sleep 15 && \
-  #     curl -X POST -H 'Content-Type: application/json' --data '{
-  #       \"name\": \"csv-file-source\",
-  #       \"config\": {
-  #         \"connector.class\": \"FileStreamSource\", 
-  #         \"tasks.max\": \"1\", 
-    
-
-  #### Testing ###: For launching testing data source, use following Container configuration and deactivate container above by commenting code:
-  IoT_sensor_data_simulation_smartwatch_TESTING:
+  IoT_sensor_data_simulation_smartwatch_PRODUCTIVE:
     image: confluentinc/cp-kafka:${CP_KAFKA_CONNECT_VERSION}
     container_name: IoT_sensor_data_simulation_smartwatch
     depends_on:
@@ -293,7 +261,7 @@ services:
         \"config\": {
           \"connector.class\": \"FileStreamSource\", 
           \"tasks.max\": \"1\", 
-          \"file\": \"/data_simulator/smartwatch_heartrate_source_data_test.csv\", 
+          \"file\": \"/data_simulator/smartwatch_heartrate_source_data.csv\", 
           \"topic\": \"topic_raw_data\",
           \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
           \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
@@ -306,6 +274,39 @@ services:
       - ./data_simulator:/data_simulator
     networks:
       - default
+    
+
+  #### Testing ###: For launching testing data source, use following Container configuration and deactivate container above by commenting code:
+  # IoT_sensor_data_simulation_smartwatch_TESTING:
+  #   image: confluentinc/cp-kafka:${CP_KAFKA_CONNECT_VERSION}
+  #   container_name: IoT_sensor_data_simulation_smartwatch
+  #   depends_on:
+  #     - broker1
+  #     - ingestion_connector     
+  #   restart: unless-stopped 
+  #   entrypoint: [ '/bin/sh', '-c' ]
+  #   command: |
+  #     "
+  #     echo -e 'Waiting for ingestion_connector to be launched...'
+  #     cub kafka-ready -b broker1:${BROKER_ADVERTISED_LISTENER_PORT_INSIDE} 1 20 && sleep 15 && \
+  #     curl -X POST -H 'Content-Type: application/json' --data '{
+  #       \"name\": \"csv-file-source\",
+  #       \"config\": {
+  #         \"connector.class\": \"FileStreamSource\", 
+  #         \"tasks.max\": \"1\", 
+  #         \"file\": \"/data_simulator/smartwatch_heartrate_source_data_test.csv\", 
+  #         \"topic\": \"topic_raw_data\",
+  #         \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\",
+  #         \"value.converter\": \"org.apache.kafka.connect.json.JsonConverter\",
+  #         \"value.converter.schemas.enable\": \"false\"
+  #       }
+  #     }' http://ingestion_connector:${INFLUXDB_INGESTION_CONNECTOR_CONTAINER_PORT}/connectors && \
+  #     sleep infinity
+  #     "
+  #   volumes:
+  #     - ./data_simulator:/data_simulator
+  #   networks:
+  #     - default
 
   # influxdb: external InfluxDB database for storing productive data 
   influxdb:

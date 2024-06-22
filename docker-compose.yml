@@ -243,7 +243,7 @@ services:
 
   # IoT_sensor_data_simulation_smartwatch: simulates an IoT data source of type smartwatch (is a connector instance inside ingestion_connector cluster)
   
-  #### Productive ###: For launching productive data source, use following container configuration and deactivate container below by commenting code:
+  ### Productive ###: For launching productive data source, use following container configuration and deactivate container below by commenting code:
   IoT_sensor_data_simulation_smartwatch_PRODUCTIVE:
     image: confluentinc/cp-kafka:${CP_KAFKA_CONNECT_VERSION}
     container_name: IoT_sensor_data_simulation_smartwatch
@@ -276,7 +276,7 @@ services:
       - default
     
 
-  #### Testing ###: For launching testing data source, use following Container configuration and deactivate container above by commenting code:
+  ### Testing ###: For launching testing data source, use following Container configuration and deactivate container above by commenting code:
   # IoT_sensor_data_simulation_smartwatch_TESTING:
   #   image: confluentinc/cp-kafka:${CP_KAFKA_CONNECT_VERSION}
   #   container_name: IoT_sensor_data_simulation_smartwatch

@@ -1,8 +1,8 @@
 # iu_data_engineering
 
 This repository represents an example infrastructure for a data intensive real time backend application based on Python and Infrastructure as Code (IaC).  
-The infrastructure contains a Kafka cluster with several additions like Kafka connect clusters and Faust streaming.  
-There is an example data source integrated which simulates continous value streams of an IoT smartwatch sensor.  
+The infrastructure contains an Apache Kafka cluster with several additions like Kafka Connect clusters and Faust streaming.  
+There is an example data source integrated which simulates continous value streams of IoT smartwatch sensors.  
 After some aggregation and processing activities the data will be uploaded to an InfluxDB database which can be monitored through a Grafana dashboard.  
 All components are realized in Docker containers and orchestrated by Docker-Compose.  
 
@@ -20,9 +20,9 @@ All components are realized in Docker containers and orchestrated by Docker-Comp
 # Prerequisites
 
 - [Linux OS](https://help.ubuntu.com/) (recommended distribution: Ubuntu 22.04.3 LTS) must be installed (e.g. in WSL2 or Virtual Machine environment)  
-- [Git](https://git-scm.com/doc) (recommended version: 2.34.1) must be installed in the Linux environment. Make sure to set git configuration core.filemode == true to keep executable right for shell scripts when cloning repository.  
+- [Git](https://git-scm.com/doc) (recommended version: 2.34.1) must be installed in the Linux environment. Make sure to set git configuration core.filemode == true to keep executable rights for shell scripts before cloning the repository.  
 - [Docker Desktop](https://docs.docker.com/desktop/) (recommended version: 4.31.1) must be installed  
-- Recommended Docker settings (depending on host system availability): >= 12GB RAM usage, <=800% CPU usage (8 cores)
+- Recommended Docker settings (depending on host system availability): RAM usage >= 12GB , CPU usage <= 800%  (8 cores)
 - Internet connection is required for downloading docker containers  
 
 
@@ -68,7 +68,7 @@ To get the backend application running on a local machine, the following steps a
   - grafana: monitoring processed IoT sensor data by the kafka cluster
   - influxdb: InfluxDB database to store productive data
 
-  Kafka connect components:
+  Kafka Connect components:
   - ingestion_connector: Source Connect cluster (FileSource) to append external data source (csv file) to the kafka cluster
   - db_connector: Sink Connect cluster (InfluxDB Sink) to append external data sink (InfluxDB) to the kafka cluster for storing productive data of the cluster
   - kafkaconnect_influxdb_sink_productive: stores productive data after being processed in the kafka cluster (is a sink connector instance inside db_connector cluster)
@@ -91,8 +91,8 @@ Source: Own illustration.
 # Project Structure
 
 ```
+├── LICENSE
 ├── README.md
-├── docker-compose.yml
 ├── data
 │   └── influxdb
 ├── data_aggregation
@@ -106,7 +106,8 @@ Source: Own illustration.
 ├── data_simulator
 │   ├── Dockerfile
 │   ├── data_simulator.py
-│   └── smartwatch_heartrate_source_data.csv
+│   ├── smartwatch_heartrate_source_data.csv
+│   └── smartwatch_heartrate_source_data_test.csv
 ├── data_upload
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -114,8 +115,10 @@ Source: Own illustration.
 ├── databases
 │   ├── Dockerfile
 │   └── create_databases.sh
+├── docker-compose.yml
 ├── documentation
-│   └── concept.jpg
+│   ├── concept.jpg
+│   └── test_results.jpg
 ├── provisioning
 │   ├── dashboards
 │   │   ├── dashboard.json
@@ -134,7 +137,7 @@ Tree view created with [tree library](https://linux.die.net/man/1/tree).
 - Grafana: `localhost:3000`  
   Initial login: user = admin, password = admin (credentials are already preset and do not need to be changed)  
   
-  Smartwatch Heartrate - Dashboard (choose Dashboard in the Dasboard Menu)
+  Smartwatch Heartrate - Dashboard (choose dashboard in the Dashboards Menu)
     - the number of smartwatch sensors monitored by the backend infrastructure
     - max. heart rate value over all sensors
     - min. heart rate value over all sensors
@@ -155,12 +158,12 @@ For testing the functionality of the architecture a stable test dataset can be u
 To use the test dataset follow these steps:  
 1. In docker-compose.yml: Add block comment to deactivate container *IoT_sensor_data_simulation_smartwatch_PRODUCTIVE*
 2. In docker-compose.yml: Remove block comment to activate container *IoT_sensor_data_simulation_smartwatch_TESTING*
-3. Make sure that InfluxDB table *topic_upload_data* in database *data_storage* does not contain content (e.g. by executing "drop series from topic_upload_data")
+3. Make sure that InfluxDB table *topic_upload_data* in database *data_storage* does not contain content (e.g. by executing ``` drop series from topic_upload_data ```)
 4. Run command ``` docker-compose up -d ```
-5. Check data flows in Grafana dashboard. Results should like this:
+5. Check data flows in Grafana dashboard. Results should look like this:
 
 ![Archictecture testing results](documentation/test_results.jpg)  
-Source: Screenshot from own Grafana dashboard.
+Source: Screenshot of own Grafana dashboard.
 
 # Limitations
 
@@ -189,20 +192,20 @@ Source: Screenshot from own Grafana dashboard.
   - Others: Apache 2.0 License  
   for details, see https://docs.confluent.io/platform/current/installation/license.h
 
-- Copyright by respective image providers.  
+- Copyright by image providers.  
 
 
 # Integrating Batch Pipeline
 
 Modern big data architectures and applications often face the need of combining streaming and batch processing of data. Because of this a possible way of integrating a batch processing pipeline into the existing infrastructure will be discussed in this section.  
 
-There are many possibilities of realising a parallel architecture for data streaming and batch processing. One way is to implement a Lambda architecture. In addition to the existing processing thread which will be called "Streaming/Speed layer" a second processing branch called "Batch layer" will be integrated in parallel. Both layers receive the input data from the data_ingestion microservice and can be implemented using Kafka in combination with Faust Streaming.  
+There are many possibilities of realising a parallel architecture for data streaming and batch processing. One way is to implement a Lambda architecture. In addition to the existing processing thread which will be called "Streaming/Speed layer" a second processing branch called "Batch layer" will be integrated in parallel. Both layers receive the input data from the data_ingestion microservice and can be implemented using Apache Kafka in combination with Faust Streaming.  
 
-In the Batch layer the raw input data will at first be stored in a database to collect several values for processing. After that the data will be cyclic aggregated as a batch what means a defined set of data values (e.g. all values of the past minute/hour or last 100 values, etc.). This aggregated information summarizes a lot of historical data and can be analysed in an overarching way. Inside the Batch layer data can be sent via separate Kafka topics and at least one additional database for storing batch data is required.
+In the Batch layer the raw input data will be stored in a database at first to collect several values for processing. After that the data will be aggregated cyclic as a batch what means a defined set of data values (e.g. all values of the past minute/hour or last 100 values, etc.). This aggregated information summarizes a lot of historical data and can be analysed in an overarching way. Inside the Batch layer data can be sent via separate Kafka topics and at least one additional database for storing batch data is required.
 
-In the data pipeline a third layer called "Serving layer" can be implemented which combines the information of both the Streaming and the Batch layer. In this step the very actual information of the Straming layer and the overall historical information out of the Batch layer converge and are merged to a holistic knowledge about the application and can be presented to an appropriate audience.  
+In the data pipeline a third layer called "Serving layer" can be implemented which combines the information of both the Streaming and the Batch layer. In this step the very actual information of the Streaming layer and the overall historical information out of the Batch layer converge and are merged to a holistic knowledge about the application and can be presented to an appropriate audience.  
 
-Each layer has its own advantages and disadvantages. The Streaming layer for example provides high timeliness of data but therefore requires a high performance and low latencies inside the processing cluster which means high costs in equipment and development. The Batch layer does not need that high processing performance because of its cyclic calculations and so can save effort. On top of that the quality and amount of data anlysis can be higher. The downside in this case is the delay between data generation and analysis.  
+Each layer has its own advantages and disadvantages. The Streaming layer for example provides high timeliness of data but therefore requires a high performance and low latencies inside the processing cluster which lead to high costs in equipment and development. The Batch layer does not depend on a high processing performance because of its cyclic calculations and so can save effort. On top of that the quality and amount of data anlysis can be higher. The downside in this case is the time delay between data generation and analysis.  
 
 [Otun,2019]
 
